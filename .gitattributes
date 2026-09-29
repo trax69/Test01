@@ -1,0 +1,8 @@
+* text=auto
+
+*.cs text diff=csharp
+*.csproj text
+*.slnx text
+*.json text
+*.md text
+*.ps1 text
