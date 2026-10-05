@@ -15,8 +15,11 @@ public class RabbitSettingsTests
         var password = "Password_Host_Null";
         var vhost = "/Host_Null";
 
-        // Act and Assert
-        Assert.Throws<ArgumentNullException>(() => new RabbitSettings(host, port, username, password, vhost));
+        // Act
+        var exception = Assert.Throws<ArgumentNullException>(() => new RabbitSettings(host, port, username, password, vhost));
+
+        // Assert
+        Assert.Equal("host", exception.ParamName);
     }
 
 
@@ -37,8 +40,10 @@ public class RabbitSettingsTests
         var password = "Password_Host_Empty";
         var vhost = "/Host_Empty";
 
-        // Act and Assert
-        Assert.Throws<ArgumentException>(() => new RabbitSettings(host, port, username, password, vhost));
+        // Act
+        var exception = Assert.Throws<ArgumentException>(() => new RabbitSettings(host, port, username, password, vhost));
+        // Assert
+        Assert.Equal("host", exception.ParamName);
     }
 
     // Cuando el host es válido entonces se construye correctamente la configuración de RabbitMQ y queda guardado.

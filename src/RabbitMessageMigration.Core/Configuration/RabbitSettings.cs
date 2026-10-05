@@ -9,14 +9,9 @@ public sealed class RabbitSettings
             throw new ArgumentNullException(nameof(host), "Host cannot be null.");
         }
 
-        if (host == string.Empty)
+        if (string.IsNullOrWhiteSpace(host))
         {
-            throw new ArgumentException("Host cannot be empty.", nameof(host));
-        }
-
-        if (host == " ")
-        {
-            throw new ArgumentException("Host cannot be whitespace.", nameof(host));
+            throw new ArgumentException("Host cannot be empty or whitespace.", nameof(host));
         }
 
         Host = host;
