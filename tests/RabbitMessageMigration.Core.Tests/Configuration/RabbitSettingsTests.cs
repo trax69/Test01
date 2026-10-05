@@ -1,4 +1,4 @@
-using RabbitMessageMigration.Core;
+using RabbitMessageMigration.Core.Configuration;
 
 namespace RabbitMessageMigration.Core.Tests.Configuration;
 
