@@ -19,8 +19,9 @@ coverage.*.xml
 *.suo
 *.DotSettings.user
 
-# Claude Code (local, per-user)
-.claude/settings.local.json
+# Notas
+note.md
+task.md
 
 # NuGet
 *.nupkg

@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\RabbitShovelMigration.Core\RabbitShovelMigration.Core.csproj" />
+    <ProjectReference Include="..\RabbitMessageMigration.Core\RabbitMessageMigration.Core.csproj" />
+    <ProjectReference Include="..\RabbitMessageMigration.RabbitMq\RabbitMessageMigration.RabbitMq.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RabbitMessageMigration.Console/RabbitMessageMigration.Console.csproj" />
+    <Project Path="src/RabbitMessageMigration.Core/RabbitMessageMigration.Core.csproj" />
+    <Project Path="src/RabbitMessageMigration.RabbitMq/RabbitMessageMigration.RabbitMq.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RabbitMessageMigration.Core.Tests/RabbitMessageMigration.Core.Tests.csproj" />
+    <Project Path="tests/RabbitMessageMigration.RabbitMq.Tests/RabbitMessageMigration.RabbitMq.Tests.csproj" />
+  </Folder>
+</Solution>

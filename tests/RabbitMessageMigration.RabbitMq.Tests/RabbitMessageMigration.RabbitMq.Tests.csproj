@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\RabbitShovelMigration.Core\RabbitShovelMigration.Core.csproj" />
+    <ProjectReference Include="..\..\src\RabbitMessageMigration.RabbitMq\RabbitMessageMigration.RabbitMq.csproj" />
   </ItemGroup>
 
 </Project>
