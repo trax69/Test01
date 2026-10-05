@@ -6,13 +6,20 @@ public sealed class RabbitSettings
     {
         if (host is null)
         {
-            throw new ArgumentNullException(nameof(host));
+            throw new ArgumentNullException(nameof(host), "Host cannot be null.");
         }
 
+        if (host == string.Empty)
+        {
+            throw new ArgumentException("Host cannot be empty.", nameof(host));
+        }
+
+        if (host == " ")
+        {
+            throw new ArgumentException("Host cannot be whitespace.", nameof(host));
+        }
 
         Host = host;
-
-
     }
 
     public string Host { get; }
