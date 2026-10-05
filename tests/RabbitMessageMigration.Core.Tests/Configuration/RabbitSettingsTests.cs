@@ -4,19 +4,25 @@ namespace RabbitMessageMigration.Core.Tests.Configuration;
 
 public class RabbitSettingsTests
 {
+    private static RabbitSettings CreateRabbitSettings(
+        string host = "localhost",
+        int port = 5672,
+        string username = "guest",
+        string password = "guest",
+        string vhost = "/")
+    {
+        return new RabbitSettings(host, port, username, password, vhost);
+    }
+
     // Cuando host es nulo entonces lanzar una excepción de tipo ArgumentNullException.
     [Fact]
     public void When_host_is_null_should_throw_argument_null_exception()
     {
         // Arrange
         string host = null!;
-        var port = 5672;
-        var username = "User_Host_Null";
-        var password = "Password_Host_Null";
-        var vhost = "/Host_Null";
 
         // Act
-        var exception = Assert.Throws<ArgumentNullException>(() => new RabbitSettings(host, port, username, password, vhost));
+        var exception = Assert.Throws<ArgumentNullException>(() => CreateRabbitSettings(host: host));
 
         // Assert
         Assert.Equal("host", exception.ParamName);
@@ -34,14 +40,10 @@ public class RabbitSettingsTests
     public void When_host_is_empty_or_whitespace_should_throw_argument_exception(string host)
     {
 
-        // Arrange
-        var port = 5672;
-        var username = "User_Host_Empty";
-        var password = "Password_Host_Empty";
-        var vhost = "/Host_Empty";
+        // Arrange InlineData
 
         // Act
-        var exception = Assert.Throws<ArgumentException>(() => new RabbitSettings(host, port, username, password, vhost));
+        var exception = Assert.Throws<ArgumentException>(() => CreateRabbitSettings(host: host));
         // Assert
         Assert.Equal("host", exception.ParamName);
     }
@@ -53,13 +55,9 @@ public class RabbitSettingsTests
     {
         // Arrange
         var host = "localhost";
-        var port = 5672;
-        var username = "User_Host_Valid";
-        var password = "Password_Host_Valid";
-        var vhost = "/Host_Valid";
 
         // Act
-        var rabbitSettings = new RabbitSettings(host, port, username, password, vhost);
+        var rabbitSettings = CreateRabbitSettings(host: host);
 
         // Assert
         Assert.Equal(host, rabbitSettings.Host);
