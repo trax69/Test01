@@ -9,7 +9,7 @@ public class RabbitSettingsTests
         int port = 5672,
         string username = "user",
         string password = "password",
-        string vhost = "/")
+        string? vhost = "/")
     {
         return new RabbitSettings(host, port, username, password, vhost);
     }
@@ -92,7 +92,7 @@ public class RabbitSettingsTests
         // Assert
         Assert.Equal(port, rabbitSettings.Port);
     }
-    
+
     // Cuando el usuario sea nulo entonces lanzar una excepción de tipo ArgumentNullException
     [Fact]
     public void When_username_is_null_should_throw_argument_null_exception()
@@ -139,14 +139,98 @@ public class RabbitSettingsTests
         Assert.Equal(username, rabbitSettings.Username);
     }
 
-
     // Cuando la contraseña sea nula entonces lanzar una excepción de tipo ArgumentNullException.
-    // Cuando la contraseña sea "" entonces lanzar una excepción de tipo ArgumentException.
-    // Cuando la contraseña sea " " entonces lanzar una excepción de tipo ArgumentException.
+    [Fact]
+    public void When_password_is_null_should_throw_argument_null_exception()
+    {
+        // Arrange
+        string password = null!;
+
+        // Act
+        var exception = Assert.Throws<ArgumentNullException>(() => CreateRabbitSettings(password: password));
+
+        // Assert
+        Assert.Equal("password", exception.ParamName);
+    }
+
+    // Cuando la contraseña sea empty, whitespace, entonces lanzar una excepción de tipo ArgumentException.
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("\t")]
+    [InlineData("\n")]
+    [InlineData("\r")]
+    public void When_password_is_empty_or_whitespace_should_throw_argument_exception(string password)
+    {
+        // Arrange
+
+        // Act
+        var exception = Assert.Throws<ArgumentException>(() => CreateRabbitSettings(password: password));
+
+        // Assert
+        Assert.Equal("password", exception.ParamName);
+    }
+
     // Cuando la contraseña es válida entonces se construye correctamente la configuración de RabbitMQ y queda guardado.
-    // Cuando Vhost sea " " entonces lanzar una excepción de tipo ArgumentException.
-    // Cuando Vhost sea nulo o "" entonces el Vhost debe ser "/". 
+    [Fact]
+    public void When_password_is_valid_should_password_be_saved()
+    {
+        // Arrange
+        var password = "guest";
+
+        // Act
+        var rabbitSettings = CreateRabbitSettings(password: password);
+
+        // Assert
+        Assert.Equal(password, rabbitSettings.Password);
+    }
+
+    // Cuando Vhost sea whitespace entonces lanzar una excepción de tipo ArgumentException.
+    [Theory]
+    [InlineData(" ")]
+    [InlineData("\t")]
+    [InlineData("\n")]
+    [InlineData("\r")]
+    public void When_vhost_is_whitespace_should_throw_argument_exception(string vhost)
+    {
+        // Arrange InlineData
+
+        // Act
+        var exception = Assert.Throws<ArgumentException>(() => CreateRabbitSettings(vhost: vhost));
+
+        // Assert
+        Assert.Equal("vhost", exception.ParamName);
+    }
+
+    // Cuando Vhost sea null o vacío entonces se debe asignar el valor por defecto "/".
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void When_vhost_is_null_or_empty_should_default_to_root(string? vhost)
+    {
+        // Arrange InlineData
+
+        // Act
+        var rabbitSettings = CreateRabbitSettings(vhost: vhost!);
+
+        // Assert
+        Assert.Equal("/", rabbitSettings.Vhost);
+    }
+
     // Cuando Vhost es válido entonces se construye correctamente la configuración de RabbitMQ y queda guardado.
+    [Fact]
+    public void When_vhost_is_valid_should_vhost_be_saved()
+    {
+        // Arrange
+        var vhost = "my_vhost";
+
+        // Act
+        var rabbitSettings = CreateRabbitSettings(vhost: vhost);
+
+        // Assert
+        Assert.Equal(vhost, rabbitSettings.Vhost);
+    }
+
     // Cuando se convierte la configuración a texto entonces el texto no contiene la contraseña (usar una contraseña larga y reconocible).
     // Cuando se convierte la configuración a texto entonces el texto contiene el host.
 }
