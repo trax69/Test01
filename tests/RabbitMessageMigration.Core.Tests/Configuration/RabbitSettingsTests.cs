@@ -4,13 +4,26 @@ namespace RabbitMessageMigration.Core.Tests.Configuration;
 
 public class RabbitSettingsTests
 {
-
-    // Pruebas para la configuración de RabbitMQ.
     // 1. Cuando host es nulo entonces lanzar una excepción de tipo ArgumentNullException.
+    [Fact]
+    public void when_host_is_null_should_throw_argument_null_exception()
+    {
+        // Arrange
+        string host = null!;
+        var port = 5672;
+        var username = "User_Host_Null";
+        var password = "Password_Host_Null";
+        var vhost = "/Host_Null";
+
+        // Act and Assert
+        Assert.Throws<ArgumentNullException>(() => new RabbitSettings(host, port, username, password, vhost));
+    }
+    
     // 2. Cuando host es "" entonces lanzar una excepción de tipo ArgumentException.
     // 3. Cuando host es " " entonces lanzar una excepción de tipo ArgumentException.
 
     // 4. Cuando el host es válido entonces se construye correctamente la configuración de RabbitMQ y queda guardado.
+
     [Fact]
     public void when_host_is_valid_should_host_be_saved()
     {
