@@ -9,7 +9,7 @@ public class RabbitSettingsTests
         int port = 5672,
         string username = "user",
         string password = "password",
-        string? vhost = "/")
+        string vhost = "/")
     {
         return new RabbitSettings(host, port, username, password, vhost);
     }
@@ -232,5 +232,19 @@ public class RabbitSettingsTests
     }
 
     // Cuando se convierte la configuración a texto entonces el texto no contiene la contraseña (usar una contraseña larga y reconocible).
+    [Fact]
+    public void When_converting_to_string_should_not_contain_password()
+    {
+        // Arrange
+        var password = "ThisIsAVeryLongAndRecognizablePassword";
+
+        // Act
+        var rabbitSettings = CreateRabbitSettings(password: password);
+
+        // Assert
+        var settingsString = rabbitSettings.ToString();
+        Assert.DoesNotContain(password, settingsString);
+    }
+
     // Cuando se convierte la configuración a texto entonces el texto contiene el host.
 }
