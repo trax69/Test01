@@ -32,4 +32,9 @@ public sealed class RabbitSettings
     public int Port { get; }
     public string Host { get; }
     public string Vhost { get; }
+
+    public override string ToString()
+    {
+        return $"<RabbitSettings> usando {Host} en el puerto {Port} con usuario {Username} y vhost {Vhost}";
+    }
 }

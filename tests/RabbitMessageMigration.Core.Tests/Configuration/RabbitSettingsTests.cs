@@ -107,7 +107,7 @@ public class RabbitSettingsTests
         Assert.Equal("username", exception.ParamName);
     }
 
-    // Cuando el usuario sea empty, whitespace, null, entonces lanzar una excepción de tipo ArgumentException.
+    // Cuando el usuario sea empty, whitespace, entonces lanzar una excepción de tipo ArgumentException.
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
@@ -237,14 +237,27 @@ public class RabbitSettingsTests
     {
         // Arrange
         var password = "ThisIsAVeryLongAndRecognizablePassword";
-
-        // Act
         var rabbitSettings = CreateRabbitSettings(password: password);
 
-        // Assert
+        // Act
         var settingsString = rabbitSettings.ToString();
+
+        // Assert
         Assert.DoesNotContain(password, settingsString);
     }
 
     // Cuando se convierte la configuración a texto entonces el texto contiene el host.
+    [Fact]
+    public void When_converting_to_string_should_contain_host()
+    {
+        // Arrange
+        var host = "ThisIsARecognizableHostName";
+        var rabbitSettings = CreateRabbitSettings(host: host);
+
+        // Act
+        var settingsString = rabbitSettings.ToString();
+
+        // Assert
+        Assert.Contains(host, settingsString);
+    }
 }
