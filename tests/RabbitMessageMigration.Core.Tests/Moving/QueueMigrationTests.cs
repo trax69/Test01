@@ -14,9 +14,9 @@ public class QueueMigrationTests
     // Cuando un mensaje es movido entonces se confirma en el origen.
     // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
 
-    // Cuando la cola está vacia, entonces no hay movimiento no se mueve ningún mensaje.
+    // Cuando la cola está vacía, entonces el resultado indica que se han migrado 0 mensajes.
     [Fact]
-    public async Task When_queue_is_empty_should_move_no_messages()
+    public async Task When_queue_is_empty_should_report_zero_migrated_messages()
     {
         // Arrange
         var source = Substitute.For<IMessageSource>();
@@ -29,6 +29,23 @@ public class QueueMigrationTests
 
         // Assert
         Assert.Equal(0, result.MigratedMessages);
+    }
+
+    // Cuando la cola está vacía, entonces no se envía ningún mensaje al destino.
+    [Fact]
+    public async Task When_queue_is_empty_should_not_send_any_message_to_destination()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        source.ReceiveMessageAsync("orders", CancellationToken.None).ReturnsNull();
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        await destination.DidNotReceiveWithAnyArgs().SendMessageAsync(default!, default!, default);
     }
 
     // Cuando un mensaje se mueve y el destino falla, entonces se devuelve al origen.
