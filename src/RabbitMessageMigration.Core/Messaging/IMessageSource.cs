@@ -7,4 +7,9 @@ public interface IMessageSource
     Task ConfirmMessageAsync(string queueName, ReceivedMessage message, CancellationToken cancellationToken);
 
     Task RequeueMessageAsync(string queueName, ReceivedMessage message, CancellationToken cancellationToken);
+
+    Task<int> GetMessageCountAsync(
+        string queueName,
+        CancellationToken cancellationToken);
+
 }

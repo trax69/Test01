@@ -8,6 +8,8 @@ namespace RabbitMessageMigration.Core.Tests.Moving;
 
 public class QueueMigrationTests
 {
+    private const int OneInitialMessage = 1;
+
     // Cuando la cola está vacía, entonces el resultado indica que se han migrado 0 mensajes.
     [Fact]
     public async Task When_queue_is_empty_should_report_zero_migrated_messages()
@@ -50,6 +52,7 @@ public class QueueMigrationTests
         var source = Substitute.For<IMessageSource>();
         var destination = Substitute.For<IMessageDestination>();
         var message = new ReceivedMessage();
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(OneInitialMessage);
         source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message);
         var sut = new QueueMigration(source, destination);
 
@@ -68,6 +71,7 @@ public class QueueMigrationTests
         var source = Substitute.For<IMessageSource>();
         var destination = Substitute.For<IMessageDestination>();
         var message = new ReceivedMessage();
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(OneInitialMessage);
         source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message);
         var sut = new QueueMigration(source, destination);
 
@@ -86,6 +90,7 @@ public class QueueMigrationTests
         var source = Substitute.For<IMessageSource>();
         var destination = Substitute.For<IMessageDestination>();
         var message = new ReceivedMessage();
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(OneInitialMessage);
         source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message);
         var sut = new QueueMigration(source, destination);
 
@@ -105,6 +110,7 @@ public class QueueMigrationTests
         var source = Substitute.For<IMessageSource>();
         var destination = Substitute.For<IMessageDestination>();
         var message = new ReceivedMessage();
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(OneInitialMessage);
         source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message);
         destination.SendMessageAsync("orders", message, CancellationToken.None).Returns(Task.FromException(new Exception()));
         var sut = new QueueMigration(source, destination);
@@ -125,10 +131,11 @@ public class QueueMigrationTests
         var destination = Substitute.For<IMessageDestination>();
         var message = new ReceivedMessage();
 
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(OneInitialMessage);
         source.ReceiveMessageAsync("orders", CancellationToken.None)
             .Returns(message);
 
-        destination.SendMessageAsync("orders",message,CancellationToken.None).Returns(Task.FromException(new Exception()));
+        destination.SendMessageAsync("orders", message, CancellationToken.None).Returns(Task.FromException(new Exception()));
 
         var sut = new QueueMigration(source, destination);
 
@@ -136,10 +143,38 @@ public class QueueMigrationTests
         await Assert.ThrowsAsync<Exception>(() => sut.MoveMessagesAsync("orders", CancellationToken.None));
 
         // Assert
-        await source.Received(1).RequeueMessageAsync("orders",message,CancellationToken.None);
+        await source.Received(1).RequeueMessageAsync("orders", message, CancellationToken.None);
     }
 
     // Cuando hay dos mensajes y aparece un tercer mensaje, entonces solo se migran los iniciales.
+    [Fact]
+    public async Task When_new_messages_arrive_after_migration_started_should_move_only_initial_messages()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+
+        var message1 = new ReceivedMessage();
+        var message2 = new ReceivedMessage();
+        var message3 = new ReceivedMessage();
+
+        const int initialMessageCount = 2;
+
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(initialMessageCount);
+        source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message1, message2, message3);
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        Assert.Equal(2, result.MigratedMessages);
+        await destination.Received(1).SendMessageAsync("orders", message1, CancellationToken.None);
+        await destination.Received(1).SendMessageAsync("orders", message2, CancellationToken.None);
+        await destination.DidNotReceive().SendMessageAsync("orders", message3, CancellationToken.None);
+    }
+
     // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
     // Cuando hay nuevos mensajes de los contados al inicio, entonces se mueven los contados.
     // Cuando hay varios mensajes y uno falla a mitad, entonces se mueven los que se puedan y se confirma en el origen los que se movieron.

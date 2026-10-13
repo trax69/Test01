@@ -16,26 +16,32 @@ public sealed class QueueMigration
 
     public async Task<QueueMigrationResult> MoveMessagesAsync(string queueName, CancellationToken cancellationToken)
     {
-        var message = await _messageSource.ReceiveMessageAsync(queueName, cancellationToken);
+        var initialMessageCount = await _messageSource.GetMessageCountAsync(queueName, cancellationToken);
+        var migratedMessages = 0;
 
-        if (message == null)
+        for (var i = 0; i < initialMessageCount; i++)
         {
-            return new QueueMigrationResult(0);
-        }
+            var message = await _messageSource.ReceiveMessageAsync(queueName, cancellationToken);
 
-        try
-        {
-            await _messageDestination.SendMessageAsync(queueName, message, cancellationToken);
-        }
-        catch
-        {
-            await _messageSource.RequeueMessageAsync(queueName, message, cancellationToken);
-            throw;
-        }
-        
-        await _messageSource.ConfirmMessageAsync(queueName, message, cancellationToken);
+            if (message is null)
+            {
+                break;
+            }
 
-        return new QueueMigrationResult(1);
+            try
+            {
+                await _messageDestination.SendMessageAsync(queueName, message, cancellationToken);
+            }
+            catch
+            {
+                await _messageSource.RequeueMessageAsync(queueName, message, cancellationToken);
+                throw;
+            }
+
+            await _messageSource.ConfirmMessageAsync(queueName, message, cancellationToken);
+            migratedMessages++;
+        }
+        return new QueueMigrationResult(migratedMessages);
     }
 
 }
