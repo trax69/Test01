@@ -14,9 +14,18 @@ public sealed class QueueMigration
         _messageDestination = messageDestination;
     }
 
-    public Task<QueueMigrationResult> MoveMessagesAsync(string queueName, CancellationToken cancellationToken)
+    public async Task<QueueMigrationResult> MoveMessagesAsync(string queueName, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new QueueMigrationResult(0));
+        var message = await _messageSource.ReceiveMessageAsync(queueName, cancellationToken);
+
+        if (message == null)
+        {
+            return new QueueMigrationResult(0);
+        }
+
+        await _messageDestination.SendMessageAsync(queueName, message, cancellationToken);
+
+        return new QueueMigrationResult(1);
     }
 
 }

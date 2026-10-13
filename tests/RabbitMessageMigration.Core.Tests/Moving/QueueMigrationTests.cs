@@ -48,6 +48,24 @@ public class QueueMigrationTests
         await destination.DidNotReceiveWithAnyArgs().SendMessageAsync(default!, default!, default);
     }
 
+    // Cuando la cola tiene un mensaje, entonces se envía ese mismo mensaje al destino.
+    [Fact]
+    public async Task When_queue_has_one_message_should_send_that_message_to_destination()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var message = new ReceivedMessage();
+        source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message);
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        await destination.Received(1).SendMessageAsync("orders", message, CancellationToken.None);
+    }
+
     // Cuando un mensaje se mueve y el destino falla, entonces se devuelve al origen.
     // Cuando hay nuevos mensajes de los contados al inicio, entonces se mueven los contados.
     // Cuando hay varios mensajes y uno falla a mitad, entonces se mueven los que se puedan y se confirma en el origen los que se movieron.
