@@ -23,7 +23,16 @@ public sealed class QueueMigration
             return new QueueMigrationResult(0);
         }
 
-        await _messageDestination.SendMessageAsync(queueName, message, cancellationToken);
+        try
+        {
+            await _messageDestination.SendMessageAsync(queueName, message, cancellationToken);
+        }
+        catch
+        {
+            await _messageSource.RequeueMessageAsync(queueName, message, cancellationToken);
+            throw;
+        }
+        
         await _messageSource.ConfirmMessageAsync(queueName, message, cancellationToken);
 
         return new QueueMigrationResult(1);

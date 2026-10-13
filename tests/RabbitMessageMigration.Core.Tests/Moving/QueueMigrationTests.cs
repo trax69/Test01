@@ -116,8 +116,31 @@ public class QueueMigrationTests
         await source.DidNotReceive().ConfirmMessageAsync("orders", message, CancellationToken.None);
     }
 
-    // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
     // Cuando un mensaje se mueve y el destino falla, entonces se devuelve al origen.
+    [Fact]
+    public async Task When_message_is_moved_and_destination_fails_should_return_to_source()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var message = new ReceivedMessage();
+
+        source.ReceiveMessageAsync("orders", CancellationToken.None)
+            .Returns(message);
+
+        destination.SendMessageAsync("orders",message,CancellationToken.None).Returns(Task.FromException(new Exception()));
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        await Assert.ThrowsAsync<Exception>(() => sut.MoveMessagesAsync("orders", CancellationToken.None));
+
+        // Assert
+        await source.Received(1).RequeueMessageAsync("orders",message,CancellationToken.None);
+    }
+
+    // Cuando hay dos mensajes y aparece un tercer mensaje, entonces solo se migran los iniciales.
+    // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
     // Cuando hay nuevos mensajes de los contados al inicio, entonces se mueven los contados.
     // Cuando hay varios mensajes y uno falla a mitad, entonces se mueven los que se puedan y se confirma en el origen los que se movieron.
     // Cuando se cancela la operación, entonces se detiene el movimiento y no se mueve ningún mensaje.
