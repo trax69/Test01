@@ -219,8 +219,51 @@ public class QueueMigrationTests
     // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
     // Cuando hay nuevos mensajes de los contados al inicio, entonces se mueven los contados.
     // Cuando hay varios mensajes y uno falla a mitad, entonces se mueven los que se puedan y se confirma en el origen los que se movieron.
-    // Cuando se cancela a mitad de la operación, entonces se detiene el movimiento y no se mueve ningún mensaje.
+    // Cuando se cancela entre dos mensajes, entonces conserva el primero migrado y no procesa el segundo.
+    [Fact]
+    public async Task When_operation_is_cancelled_between_messages_should_keep_first_message_migrated_and_stop()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
 
+        var firstMessage = new ReceivedMessage();
+        var secondMessage = new ReceivedMessage();
+        var cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = cancellationTokenSource.Token;
+
+        source.GetMessageCountAsync("orders", cancellationToken)
+            .Returns(2);
+
+        source.ReceiveMessageAsync("orders", cancellationToken)
+            .Returns(firstMessage, secondMessage);
+
+        destination.SendMessageAsync("orders", firstMessage, cancellationToken)
+            .Returns(Task.CompletedTask);
+
+        source.When(x => x.ConfirmMessageAsync(
+            "orders",
+            firstMessage,
+            cancellationToken))
+            .Do(_ => cancellationTokenSource.Cancel());
+
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => sut.MoveMessagesAsync("orders", cancellationTokenSource.Token));
+
+        // Assert
+        await source.Received(1)
+            .ConfirmMessageAsync("orders", firstMessage, cancellationToken);
+
+        await source.DidNotReceive()
+            .ConfirmMessageAsync("orders", secondMessage, cancellationToken);
+
+        await destination.DidNotReceive()
+        .SendMessageAsync("orders", secondMessage, cancellationToken);
+    }
     // Cuando se cancela la operación antes de empezar, entonces no se mueve ningún mensaje.
     [Fact]
     public async Task When_operation_is_cancelled_before_start_should_not_move_any_message()

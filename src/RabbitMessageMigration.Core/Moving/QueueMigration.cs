@@ -23,6 +23,8 @@ public sealed class QueueMigration
 
         for (var i = 0; i < initialMessageCount; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var message = await _messageSource.ReceiveMessageAsync(queueName, cancellationToken);
 
             if (message is null)
