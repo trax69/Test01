@@ -175,6 +175,47 @@ public class QueueMigrationTests
         await destination.DidNotReceive().SendMessageAsync("orders", message3, CancellationToken.None);
     }
 
+    // Cuando falla el segundo mensaje, entonces se confirma el primero, se devuelve el segundo al origen y se detiene la migración.
+    [Fact]
+    public async Task When_second_message_fails_should_confirm_first_requeue_second_and_stop()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+
+        var firstMessage = new ReceivedMessage();
+        var secondMessage = new ReceivedMessage();
+        var thirdMessage = new ReceivedMessage();
+
+        source.GetMessageCountAsync("orders", CancellationToken.None)
+            .Returns(3);
+
+        source.ReceiveMessageAsync("orders", CancellationToken.None)
+            .Returns(firstMessage, secondMessage, thirdMessage);
+
+        destination.SendMessageAsync("orders", firstMessage, CancellationToken.None)
+            .Returns(Task.CompletedTask);
+
+        destination.SendMessageAsync("orders", secondMessage, CancellationToken.None)
+            .Returns(Task.FromException(new InvalidOperationException("Destination unavailable")));
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => sut.MoveMessagesAsync("orders", CancellationToken.None));
+
+        // Assert
+        await source.Received(1)
+            .ConfirmMessageAsync("orders", firstMessage, CancellationToken.None);
+
+        await source.Received(1)
+            .RequeueMessageAsync("orders", secondMessage, CancellationToken.None);
+
+        await destination.DidNotReceive()
+            .SendMessageAsync("orders", thirdMessage, CancellationToken.None);
+    }
+
     // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
     // Cuando hay nuevos mensajes de los contados al inicio, entonces se mueven los contados.
     // Cuando hay varios mensajes y uno falla a mitad, entonces se mueven los que se puedan y se confirma en el origen los que se movieron.
