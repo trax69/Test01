@@ -219,7 +219,28 @@ public class QueueMigrationTests
     // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
     // Cuando hay nuevos mensajes de los contados al inicio, entonces se mueven los contados.
     // Cuando hay varios mensajes y uno falla a mitad, entonces se mueven los que se puedan y se confirma en el origen los que se movieron.
-    // Cuando se cancela la operación, entonces se detiene el movimiento y no se mueve ningún mensaje.
     // Cuando se cancela a mitad de la operación, entonces se detiene el movimiento y no se mueve ningún mensaje.
 
+    // Cuando se cancela la operación antes de empezar, entonces no se mueve ningún mensaje.
+    [Fact]
+    public async Task When_operation_is_cancelled_before_start_should_not_move_any_message()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+
+        var cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Cancel();
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => sut.MoveMessagesAsync("orders", cancellationTokenSource.Token));
+
+        // Assert
+        await source.DidNotReceiveWithAnyArgs().GetMessageCountAsync(default!, default);
+        await source.DidNotReceiveWithAnyArgs().ReceiveMessageAsync(default!, default);
+        await destination.DidNotReceiveWithAnyArgs().SendMessageAsync(default!, default!, default);
+    }
 }

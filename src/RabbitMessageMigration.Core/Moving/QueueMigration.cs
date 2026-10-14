@@ -16,6 +16,8 @@ public sealed class QueueMigration
 
     public async Task<QueueMigrationResult> MoveMessagesAsync(string queueName, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var initialMessageCount = await _messageSource.GetMessageCountAsync(queueName, cancellationToken);
         var migratedMessages = 0;
 
