@@ -39,7 +39,7 @@ public sealed class QueueMigration
             catch
             {
                 await _messageSource.RequeueMessageAsync(queueName, message, cancellationToken);
-                throw;
+                break;
             }
 
             await _messageSource.ConfirmMessageAsync(queueName, message, cancellationToken);

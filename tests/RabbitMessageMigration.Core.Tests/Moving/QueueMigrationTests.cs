@@ -116,7 +116,7 @@ public class QueueMigrationTests
         var sut = new QueueMigration(source, destination);
 
         // Act
-        await Assert.ThrowsAsync<Exception>(() => sut.MoveMessagesAsync("orders", CancellationToken.None));
+        await sut.MoveMessagesAsync("orders", CancellationToken.None);
 
         // Assert
         await source.DidNotReceive().ConfirmMessageAsync("orders", message, CancellationToken.None);
@@ -140,7 +140,7 @@ public class QueueMigrationTests
         var sut = new QueueMigration(source, destination);
 
         // Act
-        await Assert.ThrowsAsync<Exception>(() => sut.MoveMessagesAsync("orders", CancellationToken.None));
+        await sut.MoveMessagesAsync("orders", CancellationToken.None);
 
         // Assert
         await source.Received(1).RequeueMessageAsync("orders", message, CancellationToken.None);
@@ -202,8 +202,7 @@ public class QueueMigrationTests
         var sut = new QueueMigration(source, destination);
 
         // Act
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => sut.MoveMessagesAsync("orders", CancellationToken.None));
+        await sut.MoveMessagesAsync("orders", CancellationToken.None);
 
         // Assert
         await source.Received(1)
@@ -214,6 +213,38 @@ public class QueueMigrationTests
 
         await destination.DidNotReceive()
             .SendMessageAsync("orders", thirdMessage, CancellationToken.None);
+    }
+
+    // Cuando falla el segundo mensaje, entonces el resultado indica que se migró 1
+    [Fact]
+    public async Task When_second_message_fails_should_report_one_migrated_message()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+
+        var firstMessage = new ReceivedMessage();
+        var secondMessage = new ReceivedMessage();
+
+        source.GetMessageCountAsync("orders", CancellationToken.None)
+            .Returns(2);
+
+        source.ReceiveMessageAsync("orders", CancellationToken.None)
+            .Returns(firstMessage, secondMessage);
+
+        destination.SendMessageAsync("orders", firstMessage, CancellationToken.None)
+            .Returns(Task.CompletedTask);
+
+        destination.SendMessageAsync("orders", secondMessage, CancellationToken.None)
+            .Returns(Task.FromException(new InvalidOperationException("Destination unavailable")));
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        Assert.Equal(1, result.MigratedMessages);
     }
 
     // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
