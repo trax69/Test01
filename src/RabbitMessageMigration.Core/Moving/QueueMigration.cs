@@ -20,6 +20,7 @@ public sealed class QueueMigration
 
         var initialMessageCount = await _messageSource.GetMessageCountAsync(queueName, cancellationToken);
         var migratedMessages = 0;
+        Exception? error = null;
 
         for (var i = 0; i < initialMessageCount; i++)
         {
@@ -36,8 +37,9 @@ public sealed class QueueMigration
             {
                 await _messageDestination.SendMessageAsync(queueName, message, cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
+                error = ex;
                 await _messageSource.RequeueMessageAsync(queueName, message, cancellationToken);
                 break;
             }
@@ -45,7 +47,7 @@ public sealed class QueueMigration
             await _messageSource.ConfirmMessageAsync(queueName, message, cancellationToken);
             migratedMessages++;
         }
-        return new QueueMigrationResult(migratedMessages);
+        return new QueueMigrationResult(migratedMessages, error);
     }
 
 }

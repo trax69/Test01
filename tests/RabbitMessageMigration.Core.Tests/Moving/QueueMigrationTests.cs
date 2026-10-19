@@ -317,4 +317,36 @@ public class QueueMigrationTests
         await source.DidNotReceiveWithAnyArgs().ReceiveMessageAsync(default!, default);
         await destination.DidNotReceiveWithAnyArgs().SendMessageAsync(default!, default!, default);
     }
+
+    // Cuando falla el segundo mensaje, entonces el resultado indica que hubo un error.
+    [Fact]
+    public async Task When_second_message_fails_should_report_failure()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+
+        var firstMessage = new ReceivedMessage();
+        var secondMessage = new ReceivedMessage();
+
+        source.GetMessageCountAsync("orders", CancellationToken.None)
+            .Returns(2);
+
+        source.ReceiveMessageAsync("orders", CancellationToken.None)
+            .Returns(firstMessage, secondMessage);
+
+        destination.SendMessageAsync("orders", firstMessage, CancellationToken.None)
+            .Returns(Task.CompletedTask);
+
+        destination.SendMessageAsync("orders", secondMessage, CancellationToken.None)
+            .Returns(Task.FromException(new InvalidOperationException("Destination unavailable")));
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+    }
 }
