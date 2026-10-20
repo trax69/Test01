@@ -361,5 +361,11 @@ public class QueueMigrationTests
         source.GetMessageCountAsync("orders", CancellationToken.None).Returns(OneInitialMessage);
         source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message);
         var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
     }
 }
