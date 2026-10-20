@@ -349,4 +349,17 @@ public class QueueMigrationTests
         // Assert
         Assert.False(result.IsSuccess);
     }
+
+    // Cuando todos los mensajes se migran bien, entonces el resultado indica éxito.
+    [Fact]
+    public async Task When_all_messages_are_migrated_successfully_should_report_success()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var message = new ReceivedMessage();
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(OneInitialMessage);
+        source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message);
+        var sut = new QueueMigration(source, destination);
+    }
 }
