@@ -247,9 +247,6 @@ public class QueueMigrationTests
         Assert.Equal(1, result.MigratedMessages);
     }
 
-    // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
-    // Cuando hay nuevos mensajes de los contados al inicio, entonces se mueven los contados.
-    // Cuando hay varios mensajes y uno falla a mitad, entonces se mueven los que se puedan y se confirma en el origen los que se movieron.
     // Cuando se cancela entre dos mensajes, entonces conserva el primero migrado y no procesa el segundo.
     [Fact]
     public async Task When_operation_is_cancelled_between_messages_should_keep_first_message_migrated_and_stop()
@@ -400,4 +397,8 @@ public class QueueMigrationTests
         Assert.IsType<InvalidOperationException>(result.Error);
         Assert.Equal("Destination unavailable", result.Error?.Message);
     }
+
+    // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
+    // Cuando hay nuevos mensajes de los contados al inicio, entonces se mueven los contados.
+    // Cuando hay varios mensajes y uno falla a mitad, entonces se mueven los que se puedan y se confirma en el origen los que se movieron.
 }
