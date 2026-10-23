@@ -366,7 +366,7 @@ public class QueueMigrationTests
         Assert.True(result.IsSuccess);
     }
 
-    // Cuando falla el segundo mensaje, entonces el resultado conserva la excepción del destino.
+        // Cuando falla el segundo mensaje, entonces el resultado conserva la excepción del destino.
     [Fact]
     public async Task When_second_message_fails_should_report_destination_exception()
     {
@@ -376,29 +376,25 @@ public class QueueMigrationTests
 
         var firstMessage = new ReceivedMessage();
         var secondMessage = new ReceivedMessage();
+        var exception = new InvalidOperationException("Destination unavailable");
 
         source.GetMessageCountAsync("orders", CancellationToken.None)
             .Returns(2);
 
         source.ReceiveMessageAsync("orders", CancellationToken.None)
             .Returns(firstMessage, secondMessage);
+
         destination.SendMessageAsync("orders", firstMessage, CancellationToken.None)
             .Returns(Task.CompletedTask);
         destination.SendMessageAsync("orders", secondMessage, CancellationToken.None)
-            .Returns(Task.FromException(new InvalidOperationException("Destination unavailable")));
-        
+            .Returns(Task.FromException(exception));
+
         var sut = new QueueMigration(source, destination);
 
         // Act
         var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
 
         // Assert
-        Assert.False(result.IsSuccess);
-        Assert.IsType<InvalidOperationException>(result.Error);
-        Assert.Equal("Destination unavailable", result.Error?.Message);
+        Assert.Same(exception, result.Error);
     }
-
-    // Cuando un mensaje es confirmado en el origen, entonces se elimina de la cola de origen.
-    // Cuando hay nuevos mensajes de los contados al inicio, entonces se mueven los contados.
-    // Cuando hay varios mensajes y uno falla a mitad, entonces se mueven los que se puedan y se confirma en el origen los que se movieron.
 }
