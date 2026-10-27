@@ -36,11 +36,16 @@
   - Seguir tras un fallo alteraría el orden de los mensajes en el destino.
   - El estado queda predecible y la migración puede reanudarse volviendo a ejecutarla.
 - **Alternativa descartada:** continuar con los siguientes mensajes tras un fallo ("mover los que se puedan").
-- **Límite conocido:** si el destino confirma el mensaje pero falla la confirmación en el origen, el mensaje queda en ambas colas.
+- **Fallo al confirmar en el origen:** la cola se para y el fallo queda en el resultado de esa cola. Ese mensaje no se cuenta como migrado: migrado significa publicado en el destino y confirmado en el origen.
+- **Fallo al devolver el mensaje al origen:** si el destino falla y además falla la devolución del mensaje, el resultado conserva los dos errores en un `AggregateException`, primero el del destino y después el de la devolución. Quien muestre el error debe recorrer sus `InnerExceptions`. El mensaje queda sin confirmar en el origen, y RabbitMQ lo devuelve a la cola cuando se cierra el canal.
+- **Fallo del origen al contar o recibir:** la cola se para y el fallo queda en el resultado de esa cola. Los mensajes ya migrados siguen contados. No hay nada que devolver, porque el mensaje que falló no llegó a recibirse.
+- **Límite conocido:** si el destino confirma el mensaje pero falla la confirmación en el origen, el mensaje queda en ambas colas. El error del resultado avisa de que el último mensaje pudo quedar duplicado.
 
 ### Significado de cancelar
 
 - **Decisión:** la cancelación se atiende entre mensajes. Si se cancela antes de empezar, no se lee ni se mueve nada. Si se cancela durante un mensaje, ese mensaje se termina (publicar y confirmar) y después se detiene. Los mensajes ya movidos siguen movidos. La cancelación se señala con `OperationCanceledException`, la convención de .NET.
 - **Motivo:** cancelar entre publicar y confirmar dejaría el mensaje duplicado en las dos colas. Terminando el mensaje en curso, cada mensaje queda o en el origen o en el destino.
 - **Alternativa descartada:** cancelar de inmediato, incluso en mitad de un mensaje.
+- **Cómo se aplica:** el token de cancelación solo llega al origen al contar y al recibir. Publicar, confirmar y devolver un mensaje al origen no lo reciben, ni siquiera la devolución tras un fallo del destino, para que cada mensaje acabe en el origen o en el destino. Si se cancela al contar o al recibir, se lanza `OperationCanceledException` y no se guarda como error en el resultado.
 - **Límite conocido:** la cancelación no es instantánea; espera a que acabe el mensaje en curso.
+- **Límite conocido:** cualquier `OperationCanceledException` que lance el origen al contar o recibir se trata como una cancelación, aunque no venga del token del usuario.
