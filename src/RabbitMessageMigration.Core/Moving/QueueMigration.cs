@@ -18,7 +18,16 @@ public sealed class QueueMigration
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var initialMessageCount = await _messageSource.GetMessageCountAsync(queueName, cancellationToken);
+        int initialMessageCount;
+        try
+        {
+            initialMessageCount = await _messageSource.GetMessageCountAsync(queueName, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            return new QueueMigrationResult(0, ex);
+        }
+
         var migratedMessages = 0;
         Exception? error = null;
 

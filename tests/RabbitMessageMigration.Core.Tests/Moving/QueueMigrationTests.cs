@@ -485,4 +485,25 @@ public class QueueMigrationTests
         // Assert
         Assert.Same(exception, result.Error);
     }
+
+    // Cuando falla al contar los mensajes del origen, entonces el resultado conserva la excepción del origen.
+    [Fact]
+    public async Task When_counting_messages_fails_should_report_source_exception()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var exception = new InvalidOperationException("Queue does not exist");
+
+        source.GetMessageCountAsync("orders", CancellationToken.None)
+            .Returns(Task.FromException<int>(exception));
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        Assert.Same(exception, result.Error);
+    }
 }
