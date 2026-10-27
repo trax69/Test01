@@ -629,4 +629,31 @@ public class QueueMigrationTests
         // Assert
         Assert.Same(exception, result.Error);
     }
+
+    // Cuando falla al confirmar el primer mensaje, entonces no se envía el segundo mensaje al destino.
+    [Fact]
+    public async Task When_confirming_first_message_fails_should_not_send_second_message()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var firstMessage = new ReceivedMessage();
+        var secondMessage = new ReceivedMessage();
+        var thirdMessage = new ReceivedMessage();
+
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(3);
+        source.ReceiveMessageAsync("orders", CancellationToken.None)
+            .Returns(firstMessage, secondMessage, thirdMessage);
+        source.ConfirmMessageAsync("orders", firstMessage, CancellationToken.None)
+            .Returns(Task.FromException(new InvalidOperationException("Source unavailable")));
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        await destination.DidNotReceive()
+            .SendMessageAsync("orders", secondMessage, Arg.Any<CancellationToken>());
+    }
 }

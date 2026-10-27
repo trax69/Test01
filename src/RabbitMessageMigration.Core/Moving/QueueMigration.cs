@@ -69,6 +69,7 @@ public sealed class QueueMigration
             catch (Exception ex)
             {
                 error = ex;
+                break;
             }
 
             migratedMessages++;
