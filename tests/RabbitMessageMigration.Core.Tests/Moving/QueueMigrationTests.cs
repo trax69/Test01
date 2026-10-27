@@ -2,12 +2,12 @@ using RabbitMessageMigration.Core.Moving;
 using RabbitMessageMigration.Core.Messaging;
 
 using NSubstitute;
-using NSubstitute.ReturnsExtensions;
 
 namespace RabbitMessageMigration.Core.Tests.Moving;
 
 public class QueueMigrationTests
 {
+    private const int NoInitialMessages = 0;
     private const int OneInitialMessage = 1;
 
     // Cuando la cola está vacía, entonces el resultado indica que se han migrado 0 mensajes.
@@ -17,7 +17,7 @@ public class QueueMigrationTests
         // Arrange
         var source = Substitute.For<IMessageSource>();
         var destination = Substitute.For<IMessageDestination>();
-        source.ReceiveMessageAsync("orders", CancellationToken.None).ReturnsNull();
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(NoInitialMessages);
         var sut = new QueueMigration(source, destination);
 
         // Act
@@ -34,7 +34,7 @@ public class QueueMigrationTests
         // Arrange
         var source = Substitute.For<IMessageSource>();
         var destination = Substitute.For<IMessageDestination>();
-        source.ReceiveMessageAsync("orders", CancellationToken.None).ReturnsNull();
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(NoInitialMessages);
         var sut = new QueueMigration(source, destination);
 
         // Act
@@ -42,6 +42,25 @@ public class QueueMigrationTests
 
         // Assert
         await destination.DidNotReceiveWithAnyArgs().SendMessageAsync(default!, default!, default);
+    }
+
+    // Cuando el origen se queda sin mensajes antes de lo previsto, entonces el resultado indica solo los mensajes migrados.
+    [Fact]
+    public async Task When_source_runs_out_of_messages_before_initial_count_should_report_only_migrated_messages()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var firstMessage = new ReceivedMessage();
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(2);
+        source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(firstMessage, (ReceivedMessage?)null);
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        Assert.Equal(1, result.MigratedMessages);
     }
 
     // Cuando la cola tiene un mensaje, entonces se envía ese mismo mensaje al destino.
