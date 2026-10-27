@@ -62,7 +62,15 @@ public sealed class QueueMigration
                 break;
             }
 
-            await _messageSource.ConfirmMessageAsync(queueName, message, CancellationToken.None);
+            try
+            {
+                await _messageSource.ConfirmMessageAsync(queueName, message, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+
             migratedMessages++;
         }
         return new QueueMigrationResult(migratedMessages, error);
