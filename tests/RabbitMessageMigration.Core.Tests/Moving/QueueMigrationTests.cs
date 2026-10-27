@@ -285,13 +285,13 @@ public class QueueMigrationTests
         source.ReceiveMessageAsync("orders", cancellationToken)
             .Returns(firstMessage, secondMessage);
 
-        destination.SendMessageAsync("orders", firstMessage, cancellationToken)
+        destination.SendMessageAsync("orders", firstMessage, Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         source.When(x => x.ConfirmMessageAsync(
             "orders",
             firstMessage,
-            cancellationToken))
+            Arg.Any<CancellationToken>()))
             .Do(_ => cancellationTokenSource.Cancel());
 
 
@@ -303,14 +303,83 @@ public class QueueMigrationTests
 
         // Assert
         await source.Received(1)
-            .ConfirmMessageAsync("orders", firstMessage, cancellationToken);
+            .ConfirmMessageAsync("orders", firstMessage, Arg.Any<CancellationToken>());
 
         await source.DidNotReceive()
-            .ConfirmMessageAsync("orders", secondMessage, cancellationToken);
+            .ConfirmMessageAsync("orders", secondMessage, Arg.Any<CancellationToken>());
 
         await destination.DidNotReceive()
-        .SendMessageAsync("orders", secondMessage, cancellationToken);
+            .SendMessageAsync("orders", secondMessage, Arg.Any<CancellationToken>());
     }
+
+    // Cuando se cancela mientras se envía un mensaje, entonces ese mensaje se termina de migrar.
+    [Fact]
+    public async Task When_operation_is_cancelled_while_sending_message_should_finish_migrating_that_message()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var message = new ReceivedMessage();
+        var cancellationTokenSource = new CancellationTokenSource();
+
+        source.GetMessageCountAsync("orders", Arg.Any<CancellationToken>()).Returns(OneInitialMessage);
+        source.ReceiveMessageAsync("orders", Arg.Any<CancellationToken>()).Returns(message);
+
+        // El destino respeta el token que recibe, como haría el cliente real de RabbitMQ.
+        destination.SendMessageAsync("orders", message, Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                cancellationTokenSource.Cancel();
+                call.Arg<CancellationToken>().ThrowIfCancellationRequested();
+                return Task.CompletedTask;
+            });
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", cancellationTokenSource.Token);
+
+        // Assert
+        Assert.Equal(1, result.MigratedMessages);
+    }
+
+    // Cuando se cancela después de enviar un mensaje y antes de confirmarlo, entonces ese mensaje se termina de migrar.
+    [Fact]
+    public async Task When_operation_is_cancelled_after_sending_message_should_finish_migrating_that_message()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var message = new ReceivedMessage();
+        var cancellationTokenSource = new CancellationTokenSource();
+
+        source.GetMessageCountAsync("orders", Arg.Any<CancellationToken>()).Returns(OneInitialMessage);
+        source.ReceiveMessageAsync("orders", Arg.Any<CancellationToken>()).Returns(message);
+
+        destination.SendMessageAsync("orders", message, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                cancellationTokenSource.Cancel();
+                return Task.CompletedTask;
+            });
+
+        // El origen respeta el token que recibe, como haría el cliente real de RabbitMQ.
+        source.ConfirmMessageAsync("orders", message, Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                call.Arg<CancellationToken>().ThrowIfCancellationRequested();
+                return Task.CompletedTask;
+            });
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", cancellationTokenSource.Token);
+
+        // Assert
+        Assert.Equal(1, result.MigratedMessages);
+    }
+
     // Cuando se cancela la operación antes de empezar, entonces no se mueve ningún mensaje.
     [Fact]
     public async Task When_operation_is_cancelled_before_start_should_not_move_any_message()

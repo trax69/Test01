@@ -35,7 +35,7 @@ public sealed class QueueMigration
 
             try
             {
-                await _messageDestination.SendMessageAsync(queueName, message, cancellationToken);
+                await _messageDestination.SendMessageAsync(queueName, message, CancellationToken.None);
             }
             catch (Exception ex)
             {
@@ -44,7 +44,7 @@ public sealed class QueueMigration
                 break;
             }
 
-            await _messageSource.ConfirmMessageAsync(queueName, message, cancellationToken);
+            await _messageSource.ConfirmMessageAsync(queueName, message, CancellationToken.None);
             migratedMessages++;
         }
         return new QueueMigrationResult(migratedMessages, error);
