@@ -40,7 +40,7 @@ public sealed class QueueMigration
             {
                 message = await _messageSource.ReceiveMessageAsync(queueName, cancellationToken);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 error = ex;
                 break;
