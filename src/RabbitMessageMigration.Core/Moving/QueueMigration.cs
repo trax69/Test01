@@ -23,7 +23,7 @@ public sealed class QueueMigration
         {
             initialMessageCount = await _messageSource.GetMessageCountAsync(queueName, cancellationToken);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             return new QueueMigrationResult(0, ex);
         }

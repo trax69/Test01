@@ -506,4 +506,29 @@ public class QueueMigrationTests
         // Assert
         Assert.Same(exception, result.Error);
     }
+
+    // Cuando se cancela mientras se cuentan los mensajes del origen, entonces se lanza OperationCanceledException.
+    [Fact]
+    public async Task When_operation_is_cancelled_while_counting_messages_should_throw_operation_cancelled()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var cancellationTokenSource = new CancellationTokenSource();
+
+        // El origen respeta el token que recibe, como haría el cliente real de RabbitMQ.
+        source.GetMessageCountAsync("orders", Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                cancellationTokenSource.Cancel();
+                call.Arg<CancellationToken>().ThrowIfCancellationRequested();
+                return Task.FromResult(OneInitialMessage);
+            });
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            () => sut.MoveMessagesAsync("orders", cancellationTokenSource.Token));
+    }
 }
