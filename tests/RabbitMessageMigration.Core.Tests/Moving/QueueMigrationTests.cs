@@ -683,6 +683,45 @@ public class QueueMigrationTests
         Assert.Equal(new Exception[] { destinationException, requeueException }, aggregateException.InnerExceptions);
     }
 
+    // Cuando se cancela mientras el destino falla, entonces el mensaje se devuelve igualmente al origen.
+    [Fact]
+    public async Task When_operation_is_cancelled_while_destination_fails_should_still_return_message_to_source()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var message = new ReceivedMessage();
+        var cancellationTokenSource = new CancellationTokenSource();
+        var messageReturnedToSource = false;
+
+        source.GetMessageCountAsync("orders", Arg.Any<CancellationToken>()).Returns(OneInitialMessage);
+        source.ReceiveMessageAsync("orders", Arg.Any<CancellationToken>()).Returns(message);
+
+        destination.SendMessageAsync("orders", message, Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                cancellationTokenSource.Cancel();
+                return Task.FromException(new InvalidOperationException("Destination unavailable"));
+            });
+
+        // El origen respeta el token que recibe, como haría el cliente real de RabbitMQ.
+        source.RequeueMessageAsync("orders", message, Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                call.Arg<CancellationToken>().ThrowIfCancellationRequested();
+                messageReturnedToSource = true;
+                return Task.CompletedTask;
+            });
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        await sut.MoveMessagesAsync("orders", cancellationTokenSource.Token);
+
+        // Assert
+        Assert.True(messageReturnedToSource);
+    }
+
     // Cuando falla al confirmar un mensaje en el origen, entonces ese mensaje no se cuenta como migrado.
     [Fact]
     public async Task When_confirming_message_fails_should_not_count_it_as_migrated()

@@ -60,7 +60,7 @@ public sealed class QueueMigration
                 error = ex;
                 try
                 {
-                    await _messageSource.RequeueMessageAsync(queueName, message, cancellationToken);
+                    await _messageSource.RequeueMessageAsync(queueName, message, CancellationToken.None);
                 }
                 catch (Exception requeueException)
                 {
