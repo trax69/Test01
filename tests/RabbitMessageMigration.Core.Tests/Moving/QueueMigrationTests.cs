@@ -630,6 +630,29 @@ public class QueueMigrationTests
         Assert.Same(exception, result.Error);
     }
 
+    // Cuando falla al confirmar un mensaje en el origen, entonces ese mensaje no se cuenta como migrado.
+    [Fact]
+    public async Task When_confirming_message_fails_should_not_count_it_as_migrated()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var message = new ReceivedMessage();
+
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(OneInitialMessage);
+        source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message);
+        source.ConfirmMessageAsync("orders", message, CancellationToken.None)
+            .Returns(Task.FromException(new InvalidOperationException("Source unavailable")));
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        Assert.Equal(0, result.MigratedMessages);
+    }
+
     // Cuando falla al confirmar el primer mensaje, entonces no se envía el segundo mensaje al destino.
     [Fact]
     public async Task When_confirming_first_message_fails_should_not_send_second_message()
