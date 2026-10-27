@@ -554,6 +554,31 @@ public class QueueMigrationTests
         Assert.Same(exception, result.Error);
     }
 
+    // Cuando falla al recibir el segundo mensaje del origen, entonces el resultado indica que se migró 1.
+    [Fact]
+    public async Task When_receiving_second_message_fails_should_report_one_migrated_message()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var firstMessage = new ReceivedMessage();
+        var exception = new InvalidOperationException("Source unavailable");
+
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(2);
+        source.ReceiveMessageAsync("orders", CancellationToken.None)
+            .Returns(
+                Task.FromResult<ReceivedMessage?>(firstMessage),
+                Task.FromException<ReceivedMessage?>(exception));
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        Assert.Equal(1, result.MigratedMessages);
+    }
+
     // Cuando se cancela mientras se recibe un mensaje del origen, entonces se lanza OperationCanceledException.
     [Fact]
     public async Task When_operation_is_cancelled_while_receiving_message_should_throw_operation_cancelled()
