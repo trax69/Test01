@@ -531,4 +531,26 @@ public class QueueMigrationTests
         await Assert.ThrowsAsync<OperationCanceledException>(
             () => sut.MoveMessagesAsync("orders", cancellationTokenSource.Token));
     }
+
+    // Cuando falla al recibir un mensaje del origen, entonces el resultado conserva la excepción del origen.
+    [Fact]
+    public async Task When_receiving_message_fails_should_report_source_exception()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var exception = new InvalidOperationException("Source unavailable");
+
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(OneInitialMessage);
+        source.ReceiveMessageAsync("orders", CancellationToken.None)
+            .Returns(Task.FromException<ReceivedMessage?>(exception));
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        Assert.Same(exception, result.Error);
+    }
 }

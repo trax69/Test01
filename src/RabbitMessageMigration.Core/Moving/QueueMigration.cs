@@ -35,7 +35,16 @@ public sealed class QueueMigration
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var message = await _messageSource.ReceiveMessageAsync(queueName, cancellationToken);
+            ReceivedMessage? message;
+            try
+            {
+                message = await _messageSource.ReceiveMessageAsync(queueName, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+                break;
+            }
 
             if (message is null)
             {
