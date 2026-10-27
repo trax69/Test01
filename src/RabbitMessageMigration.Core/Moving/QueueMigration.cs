@@ -62,8 +62,9 @@ public sealed class QueueMigration
                 {
                     await _messageSource.RequeueMessageAsync(queueName, message, cancellationToken);
                 }
-                catch (Exception)
+                catch (Exception requeueException)
                 {
+                    error = new AggregateException(ex, requeueException);
                 }
 
                 break;

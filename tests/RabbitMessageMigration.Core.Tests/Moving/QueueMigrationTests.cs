@@ -655,6 +655,34 @@ public class QueueMigrationTests
         Assert.False(result.IsSuccess);
     }
 
+    // Cuando el destino falla y también falla al devolver el mensaje al origen, entonces el resultado conserva ambas excepciones.
+    [Fact]
+    public async Task When_destination_fails_and_requeue_fails_should_report_both_exceptions()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var message = new ReceivedMessage();
+        var destinationException = new InvalidOperationException("Destination unavailable");
+        var requeueException = new InvalidOperationException("Source unavailable");
+
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(OneInitialMessage);
+        source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message);
+        destination.SendMessageAsync("orders", message, CancellationToken.None)
+            .Returns(Task.FromException(destinationException));
+        source.RequeueMessageAsync("orders", message, CancellationToken.None)
+            .Returns(Task.FromException(requeueException));
+
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        var aggregateException = Assert.IsType<AggregateException>(result.Error);
+        Assert.Equal(new Exception[] { destinationException, requeueException }, aggregateException.InnerExceptions);
+    }
+
     // Cuando falla al confirmar un mensaje en el origen, entonces ese mensaje no se cuenta como migrado.
     [Fact]
     public async Task When_confirming_message_fails_should_not_count_it_as_migrated()
