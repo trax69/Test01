@@ -57,16 +57,7 @@ public sealed class QueueMigration
             }
             catch (Exception ex)
             {
-                error = ex;
-                try
-                {
-                    await _messageSource.RequeueMessageAsync(queueName, message, CancellationToken.None);
-                }
-                catch (Exception requeueException)
-                {
-                    error = new AggregateException(ex, requeueException);
-                }
-
+                error = await RequeueAfterFailureAsync(queueName, message, ex);
                 break;
             }
 
@@ -83,6 +74,19 @@ public sealed class QueueMigration
             migratedMessages++;
         }
         return new QueueMigrationResult(migratedMessages, error);
+    }
+
+    private async Task<Exception> RequeueAfterFailureAsync(string queueName, ReceivedMessage message, Exception destinationException)
+    {
+        try
+        {
+            await _messageSource.RequeueMessageAsync(queueName, message, CancellationToken.None);
+            return destinationException;
+        }
+        catch (Exception requeueException)
+        {
+            return new AggregateException(destinationException, requeueException);
+        }
     }
 
 }
