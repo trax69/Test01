@@ -63,6 +63,25 @@ public class QueueMigrationTests
         Assert.Equal(1, result.MigratedMessages);
     }
 
+    // Cuando el origen se queda sin mensajes antes de lo previsto, entonces el resultado no indica error.
+    [Fact]
+    public async Task When_source_runs_out_of_messages_before_initial_count_should_report_success()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var firstMessage = new ReceivedMessage();
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(2);
+        source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(firstMessage, (ReceivedMessage?)null);
+        var sut = new QueueMigration(source, destination);
+
+        // Act
+        var result = await sut.MoveMessagesAsync("orders", CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+    }
+
     // Cuando la cola tiene un mensaje, entonces se envía ese mismo mensaje al destino.
     [Fact]
     public async Task When_queue_has_one_message_should_send_that_message_to_destination()
