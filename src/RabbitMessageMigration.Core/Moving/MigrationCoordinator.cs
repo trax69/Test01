@@ -5,12 +5,22 @@ namespace RabbitMessageMigration.Core.Moving;
 
 public sealed class MigrationCoordinator
 {
+    private readonly QueueMigration _queueMigration;
+
     public MigrationCoordinator(IMessageSource messageSource, IMessageDestination messageDestination)
     {
+        _queueMigration = new QueueMigration(messageSource, messageDestination);
     }
 
-    public Task<MigrationReport> MigrateQueuesAsync(IReadOnlyList<string> queueNames, CancellationToken cancellationToken)
+    public async Task<MigrationReport> MigrateQueuesAsync(IReadOnlyList<string> queueNames, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new MigrationReport([]));
+        var results = new List<QueueMigrationResult>();
+
+        foreach (var queueName in queueNames)
+        {
+            results.Add(await _queueMigration.MoveMessagesAsync(queueName, cancellationToken));
+        }
+
+        return new MigrationReport(results);
     }
 }

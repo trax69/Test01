@@ -22,4 +22,23 @@ public class MigrationCoordinatorTests
         // Assert
         Assert.Empty(report.Results);
     }
+
+    // Cuando hay una cola que migrar, entonces el informe contiene el resultado de migrar esa cola.
+    [Fact]
+    public async Task When_there_is_one_queue_should_report_its_migration_result()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var message = new ReceivedMessage();
+        source.GetMessageCountAsync("orders", CancellationToken.None).Returns(1);
+        source.ReceiveMessageAsync("orders", CancellationToken.None).Returns(message);
+        var sut = new MigrationCoordinator(source, destination);
+
+        // Act
+        var report = await sut.MigrateQueuesAsync(["orders"], CancellationToken.None);
+
+        // Assert
+        Assert.Equal(1, Assert.Single(report.Results).MigratedMessages);
+    }
 }
