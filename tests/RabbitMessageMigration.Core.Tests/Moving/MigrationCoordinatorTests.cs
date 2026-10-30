@@ -39,6 +39,22 @@ public class MigrationCoordinatorTests
         var report = await sut.MigrateQueuesAsync(["orders"], CancellationToken.None);
 
         // Assert
-        Assert.Equal(1, Assert.Single(report.Results).MigratedMessages);
+        Assert.Equal(1, Assert.Single(report.Results).Result.MigratedMessages);
+    }
+
+    // Cuando hay dos colas que migrar, entonces cada resultado del informe indica el nombre de su cola, en el orden indicado.
+    [Fact]
+    public async Task When_there_are_two_queues_should_report_each_result_with_its_queue_name()
+    {
+        // Arrange
+        var source = Substitute.For<IMessageSource>();
+        var destination = Substitute.For<IMessageDestination>();
+        var sut = new MigrationCoordinator(source, destination);
+
+        // Act
+        var report = await sut.MigrateQueuesAsync(["orders", "invoices"], CancellationToken.None);
+
+        // Assert
+        Assert.Equal(new[] { "orders", "invoices" }, report.Results.Select(entry => entry.QueueName));
     }
 }

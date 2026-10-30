@@ -14,11 +14,11 @@ public sealed class MigrationCoordinator
 
     public async Task<MigrationReport> MigrateQueuesAsync(IReadOnlyList<string> queueNames, CancellationToken cancellationToken)
     {
-        var results = new List<QueueMigrationResult>();
+        var results = new List<QueueMigrationEntry>();
 
         foreach (var queueName in queueNames)
         {
-            results.Add(await _queueMigration.MoveMessagesAsync(queueName, cancellationToken));
+            results.Add(new QueueMigrationEntry(queueName, await _queueMigration.MoveMessagesAsync(queueName, cancellationToken)));
         }
 
         return new MigrationReport(results);

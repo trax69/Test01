@@ -2,11 +2,11 @@ namespace RabbitMessageMigration.Core.Reporting;
 
 public sealed class MigrationReport
 {
-    public MigrationReport(IReadOnlyList<QueueMigrationResult> results)
+    public MigrationReport(IReadOnlyList<QueueMigrationEntry> results)
     {
         Results = results;
     }
 
-    public IReadOnlyList<QueueMigrationResult> Results { get; }
+    public IReadOnlyList<QueueMigrationEntry> Results { get; }
 }
 
