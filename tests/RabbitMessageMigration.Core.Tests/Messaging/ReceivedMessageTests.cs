@@ -24,4 +24,15 @@ public class ReceivedMessageTests
 
         Assert.Same(properties, sut.Properties);
     }
+
+    [Fact]
+    public void When_message_is_created_should_expose_its_routing_key()
+    {
+        var body = new byte[] { 1, 2, 3 };
+        var properties = new MessageProperties();
+
+        var sut = new ReceivedMessage(body, properties, "orders.created");
+
+        Assert.Equal("orders.created", sut.RoutingKey);
+    }
 }
