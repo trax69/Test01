@@ -66,4 +66,19 @@ public class MessagePropertiesTests
         Assert.Null(sut.MessageId);
     }
 
+    [Fact]
+    public void When_properties_are_created_with_message_id_should_expose_its_message_id()
+    {
+        // Arrange
+        var messageId = "12345";
+
+        // Act
+        var sut = new MessageProperties
+        {
+            MessageId = messageId
+        };
+
+        // Assert
+        Assert.Equal(messageId, sut.MessageId);
+    }
 }
