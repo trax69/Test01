@@ -12,6 +12,27 @@
 - **Motivo:** evitar que la contraseña acabe en pantalla o en un log sin que nadie lo haya querido.
 - **Límite conocido:** no protege si alguien lee la propiedad de la contraseña y la imprime directamente.
 
+### Origen y destino de `MigrationRequest`
+
+- **Decisión:** el origen y el destino se consideran el mismo broker cuando coinciden el host, el puerto y el vhost, y en ese caso se lanza una `ArgumentException`. El host se compara sin distinguir mayúsculas; el vhost sí las distingue. El usuario y la contraseña no cuentan.
+- **Motivo:**
+  - Mover mensajes de una cola a sí misma la vaciaría y la volvería a llenar, con riesgo de perder o duplicar mensajes. Es un error grave y por eso se rechaza antes de empezar.
+  - Los nombres de host no distinguen mayúsculas (`LOCALHOST` y `localhost` son la misma máquina), así que compararlos distinguiéndolas dejaría pasar justo el caso peligroso.
+  - Los vhost de RabbitMQ sí distinguen mayúsculas (`/Prod` y `/prod` son dos vhosts distintos), así que ignorarlas bloquearía una migración legítima.
+  - Las credenciales no cambian el destino real de los mensajes: dos usuarios distintos sobre el mismo host, puerto y vhost siguen apuntando al mismo broker.
+- **Alternativa descartada:** comparar los dos `RabbitSettings` con `Equals`. Compara referencias, así que solo detectaría el caso en que se pasa el mismo objeto dos veces.
+- **Límite conocido:** no se resuelven alias. `localhost` y `127.0.0.1`, o dos nombres DNS de la misma máquina, se consideran brokers distintos.
+
+### Lista de colas de `MigrationRequest`
+
+- **Decisión:** la lista de colas no puede ser `null` (`ArgumentNullException`), ni estar vacía, ni contener nombres vacíos, en blanco o repetidos (`ArgumentException`). Los nombres se comparan distinguiendo mayúsculas: `queue1` y `QUEUE1` son dos colas distintas. La petición guarda una copia de la lista.
+- **Motivo:**
+  - Un nombre repetido o en blanco es, con mucha probabilidad, un error al teclear. Rechazarlo avisa al usuario en lugar de ocultarlo.
+  - Si se deduplicara en silencio, el usuario no sabría que su lista tenía un error. Si se dejara pasar, la cola se migraría dos veces y el informe mostraría dos entradas.
+  - Los nombres de cola de RabbitMQ distinguen mayúsculas, igual que los vhost.
+  - Guardar una copia evita que quien creó la lista original pueda cambiar la petición después de validarla.
+- **Alternativa descartada:** eliminar los nombres repetidos sin avisar.
+
 ### Lectura de los mensajes en origen
 
 - **Decisión:** los mensajes se recibirán de uno en uno en origen o ninguno si está vacío.
