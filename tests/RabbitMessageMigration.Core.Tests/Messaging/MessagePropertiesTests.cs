@@ -55,4 +55,15 @@ public class MessagePropertiesTests
         // Assert
         Assert.Equal(contentType, sut.ContentType);
     }
+
+    [Fact]
+    public void When_properties_are_created_without_message_id_should_expose_null_message_id()
+    {
+        // Arrange / Act
+        var sut = new MessageProperties();
+
+        // Assert
+        Assert.Null(sut.MessageId);
+    }
+
 }

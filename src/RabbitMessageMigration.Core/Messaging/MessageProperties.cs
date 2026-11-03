@@ -14,4 +14,5 @@ public sealed class MessageProperties
 
     public IDictionary<string, object> Headers { get; }
     public string? ContentType { get; init; }
+    public string? MessageId { get; init; }
 }
