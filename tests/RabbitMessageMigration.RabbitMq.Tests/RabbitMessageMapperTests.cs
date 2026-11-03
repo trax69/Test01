@@ -69,7 +69,36 @@ public class RabbitMessageMapperTests
         Assert.True(result.Persistent);
     }
 
-    // si entrega transitoria o no está presente entonces se debe establecer MessageProperties.Persistent en false.
+    // si entrega transitoria está presente entonces se debe establecer MessageProperties.Persistent en false.
+    [Fact]
+    public void When_delivery_mode_is_transient_should_set_persistent_false()
+    {
+        // Arrange
+        var rabbitProperties = new BasicProperties
+        {
+            DeliveryMode = DeliveryModes.Transient
+        };
+
+        // Act
+        var result = RabbitMessageMapper.ToMessageProperties(rabbitProperties);
+
+        // Assert
+        Assert.False(result.Persistent);
+    }
+
+    // si deliveryMode no está presente entonces se debe establecer MessageProperties.Persistent en false.
+    [Fact]
+    public void When_delivery_mode_is_not_present_should_set_persistent_false()
+    {
+        // Arrange
+        var rabbitProperties = new BasicProperties();
+
+        // Act
+        var result = RabbitMessageMapper.ToMessageProperties(rabbitProperties);
+
+        // Assert
+        Assert.False(result.Persistent);
+    }
 
     // si headers están presentes entonces se deben copiar a MessageProperties.Headers.
 }
