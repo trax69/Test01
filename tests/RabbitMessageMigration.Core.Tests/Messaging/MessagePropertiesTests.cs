@@ -81,4 +81,15 @@ public class MessagePropertiesTests
         // Assert
         Assert.Equal(messageId, sut.MessageId);
     }
+
+    [Fact]
+    public void When_properties_are_created_without_persistence_should_not_be_persistent()
+    {
+        // Arrange / Act
+        var sut = new MessageProperties();
+
+        // Assert
+        Assert.False(sut.Persistent);
+    }
+
 }
