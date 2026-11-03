@@ -26,14 +26,86 @@ public class MigrationRequestTests
     }
 
     // Si el origen es null entonces lanzar una excepción de tipo ArgumentNullException.
+    [Fact]
+    public void When_source_is_null_should_throw_argument_null_exception()
+    {
+        // Arrange
+        var destination = CreateRabbitSettings(host: "destination-host");
+        var queues = new List<string> { "queue1" };
+
+        // Act
+        var exception = Assert.Throws<ArgumentNullException>(() => new MigrationRequest(null!, destination, queues));
+
+        // Assert
+        Assert.Equal("source", exception.ParamName);
+    }
 
     // Si el destino es null entonces lanzar una excepción de tipo ArgumentNullException.
+    [Fact]
+    public void When_destination_is_null_should_throw_argument_null_exception()
+    {
+        // Arrange
+        var queues = new List<string> { "queue2" };
+        var source = CreateRabbitSettings(host: "source-host");
+
+        // Act
+        var exception = Assert.Throws<ArgumentNullException>(() => new MigrationRequest(source, null!, queues));
+
+        // Assert
+        Assert.Equal("destination", exception.ParamName);
+    }
 
     // si la lista de colas es null entonces lanzar una excepción de tipo ArgumentNullException.
+    [Fact]
+    public void When_queues_is_null_should_throw_argument_null_exception()
+    {
+        // Arrange
+        var source = CreateRabbitSettings(host: "source-host");
+        var destination = CreateRabbitSettings(host: "destination-host");
+
+        // Act
+        var exception = Assert.Throws<ArgumentNullException>(() => new MigrationRequest(source, destination, null!));
+
+        // Assert
+        Assert.Equal("queues", exception.ParamName);
+    }
 
     // Si la lista de colas es vacía entonces lanzar una excepción de tipo ArgumentException.
+    [Fact]
+    public void When_queues_is_empty_should_throw_argument_exception()
+    {
+        // Arrange
+        var source = CreateRabbitSettings(host: "source-host");
+        var destination = CreateRabbitSettings(host: "destination-host");
+        var queues = new List<string>();
+
+        // Act
+        var exception = Assert.Throws<ArgumentException>(() => new MigrationRequest(source, destination, queues));
+
+        // Assert
+        Assert.Equal("queues", exception.ParamName);
+    }
 
     // Si algún nombre de cola es vacío o en blanco entonces lanzar una excepción de tipo ArgumentException.
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("\t")]
+    [InlineData("\n")]
+    [InlineData("\r")]
+    public void When_any_queue_name_is_empty_or_whitespace_should_throw_argument_exception(string queueName)
+    {
+        // Arrange
+        var source = CreateRabbitSettings(host: "source-host");
+        var destination = CreateRabbitSettings(host: "destination-host");
+        var queues = new List<string> { "queue1", queueName };
+
+        // Act
+        var exception = Assert.Throws<ArgumentException>(() => new MigrationRequest(source, destination, queues));
+
+        // Assert
+        Assert.Equal("queues", exception.ParamName);
+    }
 
     // si el origen y destino apuntan al mismo broker (mismo host, puerto y vhost) entonces lanzar una excepción de tipo ArgumentException.
     [Fact]
@@ -88,5 +160,33 @@ public class MigrationRequestTests
 
         // Assert
         Assert.Equal(queues, sut.Queues);
+    }
+
+    [Fact]
+    public void When_source_and_destination_hosts_differ_only_in_casing_should_throw_argument_exception()
+    {
+        // Arrange
+        var source = CreateRabbitSettings(host: "source-host");
+        var destination = CreateRabbitSettings(host: "SOURCE-HOST");
+
+        // Act
+        var exception = Assert.Throws<ArgumentException>(() => CreateMigrationRequest(source: source, destination: destination));
+
+        // Assert
+        Assert.Equal("destination", exception.ParamName);
+    }
+
+    [Fact]
+    public void When_vhosts_differ_only_in_casing_should_not_throw()
+    {
+        // Arrange
+        var source = CreateRabbitSettings(host: "host", vhost: "/prod");
+        var destination = CreateRabbitSettings(host: "host", vhost: "/PROD");
+
+        // Act
+        var exception = Record.Exception(() => CreateMigrationRequest(source: source, destination: destination));
+
+        // Assert
+        Assert.Null(exception);
     }
 }
