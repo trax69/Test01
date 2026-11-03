@@ -53,6 +53,21 @@ public class RabbitMessageMapperTests
     }
 
     // si entrega persistente está presente entonces se debe establecer MessageProperties.Persistent en true.
+    [Fact]
+    public void When_delivery_mode_is_persistent_should_set_persistent_true()
+    {
+        // Arrange
+        var rabbitProperties = new BasicProperties
+        {
+            DeliveryMode = DeliveryModes.Persistent
+        };
+
+        // Act
+        var result = RabbitMessageMapper.ToMessageProperties(rabbitProperties);
+
+        // Assert
+        Assert.True(result.Persistent);
+    }
 
     // si entrega transitoria o no está presente entonces se debe establecer MessageProperties.Persistent en false.
 

@@ -10,7 +10,8 @@ internal static class RabbitMessageMapper
         return new MessageProperties
         {
             ContentType = rabbitProperties.ContentType,
-            MessageId = rabbitProperties.MessageId
+            MessageId = rabbitProperties.MessageId,
+            Persistent = rabbitProperties.DeliveryMode == DeliveryModes.Persistent
         };
     }
 }
