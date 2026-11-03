@@ -92,4 +92,16 @@ public class MessagePropertiesTests
         Assert.False(sut.Persistent);
     }
 
+    [Fact]
+    public void When_properties_are_created_with_persistence_should_be_persistent()
+    {
+        // Arrange / Act
+        var sut = new MessageProperties
+        {
+            Persistent = true
+        };
+
+        // Assert
+        Assert.True(sut.Persistent);
+    }
 }
