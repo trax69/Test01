@@ -100,5 +100,17 @@ public class RabbitMessageMapperTests
         Assert.False(result.Persistent);
     }
 
-    // si headers están presentes entonces se deben copiar a MessageProperties.Headers.
+    // si headers es null o no está presente entonces se debe copiar a MessageProperties.Headers como un diccionario vacío.
+    [Fact]
+    public void When_headers_are_null_or_not_present_should_copy_to_message_properties()
+    {
+        // Arrange
+        var rabbitProperties = new BasicProperties();
+
+        // Act
+        var result = RabbitMessageMapper.ToMessageProperties(rabbitProperties);
+
+        // Assert
+        Assert.NotNull(result.Headers);
+    }
 }
