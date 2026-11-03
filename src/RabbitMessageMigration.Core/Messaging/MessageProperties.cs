@@ -16,5 +16,4 @@ public sealed class MessageProperties
     public string? ContentType { get; init; }
     public string? MessageId { get; init; }
     public bool Persistent { get; init; }
-
 }
