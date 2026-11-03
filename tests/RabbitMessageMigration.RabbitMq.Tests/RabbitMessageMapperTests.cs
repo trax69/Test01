@@ -19,6 +19,21 @@ public class RabbitMessageMapperTests
     }
 
     // si contentType está presente entonces se debe copiar a MessageProperties.ContentType.
+    [Fact]
+    public void When_content_type_is_present_should_map_content_type()
+    {
+        // Arrange
+        var rabbitProperties = new BasicProperties
+        {
+            ContentType = "application/json"
+        };
+
+        // Act
+        var result = RabbitMessageMapper.ToMessageProperties(rabbitProperties);
+
+        // Assert
+        Assert.Equal("application/json", result.ContentType);
+    }
 
     // si messageId está presente entonces se debe copiar a MessageProperties.MessageId.
 
