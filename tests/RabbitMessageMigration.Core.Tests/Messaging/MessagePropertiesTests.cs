@@ -15,6 +15,17 @@ public class MessagePropertiesTests
     }
 
     [Fact]
+    public void When_properties_are_created_without_content_type_should_expose_null_content_type()
+    {
+        // Arrange / Act
+        var sut = new MessageProperties();
+
+        // Assert
+        Assert.Null(sut.ContentType);
+    }
+
+
+    [Fact]
     public void When_properties_are_created_should_expose_its_headers()
     {
         // Arrange
