@@ -19,6 +19,11 @@ public sealed class MigrationRequest
             throw new ArgumentException("Los nombres de las colas no pueden estar vacíos o en blanco.", nameof(queues));
         }
 
+        if (queueList.Count != queueList.Distinct(StringComparer.Ordinal).Count())
+        {
+            throw new ArgumentException("La lista de colas no puede contener nombres duplicados.", nameof(queues));
+        }
+
         if (PointToSameBroker(source, destination))
         {
             throw new ArgumentException("El origen y el destino no pueden apuntar al mismo broker.", nameof(destination));

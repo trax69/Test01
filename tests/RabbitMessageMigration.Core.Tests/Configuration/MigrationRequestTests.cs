@@ -189,4 +189,37 @@ public class MigrationRequestTests
         // Assert
         Assert.Null(exception);
     }
+
+    // Si la lista de colas contiene un nombre repetido entonces lanzar una excepción de tipo ArgumentException.
+    [Fact]
+    public void When_queues_contains_duplicate_names_should_throw_argument_exception()
+    {
+        // Arrange
+        var source = CreateRabbitSettings(host: "source-host");
+        var destination = CreateRabbitSettings(host: "destination-host");
+        var queues = new List<string> { "queue1", "queue2", "queue1" };
+
+        // Act
+        var exception = Assert.Throws<ArgumentException>(() => new MigrationRequest(source, destination, queues));
+
+        // Assert
+        Assert.Equal("queues", exception.ParamName);
+    }
+
+    // Si dos nombres de cola solo se diferencian en mayúsculas entonces no lanzar excepción.
+    [Fact]
+    public void When_queues_contains_names_that_differ_only_in_casing_should_not_throw()
+    {
+        // Arrange
+        var source = CreateRabbitSettings(host: "source-host");
+        var destination = CreateRabbitSettings(host: "destination-host");
+        var queues = new List<string> { "queue1", "QUEUE1" };
+
+        // Act
+        var exception = Record.Exception(() => new MigrationRequest(source, destination, queues));
+
+        // Assert
+        Assert.Null(exception);
+    }
+
 }
