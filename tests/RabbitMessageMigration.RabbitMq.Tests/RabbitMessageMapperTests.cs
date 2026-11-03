@@ -36,6 +36,21 @@ public class RabbitMessageMapperTests
     }
 
     // si messageId está presente entonces se debe copiar a MessageProperties.MessageId.
+    [Fact]
+    public void When_message_id_is_present_should_map_message_id()
+    {
+        // Arrange
+        var rabbitProperties = new BasicProperties
+        {
+            MessageId = "12345"
+        };
+
+        // Act
+        var result = RabbitMessageMapper.ToMessageProperties(rabbitProperties);
+
+        // Assert
+        Assert.Equal("12345", result.MessageId);
+    }
 
     // si entrega persistente está presente entonces se debe establecer MessageProperties.Persistent en true.
 

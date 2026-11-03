@@ -9,7 +9,8 @@ internal static class RabbitMessageMapper
     {
         return new MessageProperties
         {
-            ContentType = rabbitProperties.ContentType
+            ContentType = rabbitProperties.ContentType,
+            MessageId = rabbitProperties.MessageId
         };
     }
 }
