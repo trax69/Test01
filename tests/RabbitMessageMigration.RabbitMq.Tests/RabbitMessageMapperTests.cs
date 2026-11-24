@@ -190,4 +190,36 @@ public class RabbitMessageMapperTests
         // Assert
         Assert.Equal("12345", result.MessageId);
     }
+
+    [Fact]
+    public void When_message_properties_are_persistent_should_set_delivery_mode_persistent()
+    {
+        // Arrange
+        var messageProperties = new MessageProperties
+        {
+            Persistent = true
+        };
+
+        // Act
+        var result = RabbitMessageMapper.ToBasicProperties(messageProperties);
+
+        // Assert
+        Assert.Equal(DeliveryModes.Persistent, result.DeliveryMode);
+    }
+
+    [Fact]
+    public void When_message_properties_are_not_persistent_should_set_delivery_mode_transient()
+    {
+        // Arrange
+        var messageProperties = new MessageProperties
+        {
+            Persistent = false
+        };
+
+        // Act
+        var result = RabbitMessageMapper.ToBasicProperties(messageProperties);
+
+        // Assert
+        Assert.Equal(DeliveryModes.Transient, result.DeliveryMode);
+    }
 }
