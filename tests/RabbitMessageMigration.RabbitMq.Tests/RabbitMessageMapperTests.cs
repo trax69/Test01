@@ -102,7 +102,7 @@ public class RabbitMessageMapperTests
 
     // si headers es null o no está presente entonces se debe copiar a MessageProperties.Headers como un diccionario vacío.
     [Fact]
-    public void When_headers_are_null_or_not_present_should_copy_to_message_properties()
+    public void When_headers_are_null_or_not_present_should_map_empty_headers()
     {
         // Arrange
         var rabbitProperties = new BasicProperties();
@@ -111,6 +111,50 @@ public class RabbitMessageMapperTests
         var result = RabbitMessageMapper.ToMessageProperties(rabbitProperties);
 
         // Assert
-        Assert.NotNull(result.Headers);
+        Assert.Empty(result.Headers);
+    }
+
+    // si headers está presente entonces se deben copiar a MessageProperties.Headers.
+    [Fact]
+    public void When_headers_are_present_should_copy_them_to_message_properties()
+    {
+        // Arrange
+        var rabbitProperties = new BasicProperties
+        {
+            Headers = new Dictionary<string, object?>
+            {
+                ["x-tenant"] = "acme",
+                ["x-retries"] = 3
+            }
+        };
+
+        // Act
+        var result = RabbitMessageMapper.ToMessageProperties(rabbitProperties);
+
+        // Assert
+        Assert.Equal(2, result.Headers.Count);
+        Assert.Equal("acme", result.Headers["x-tenant"]);
+        Assert.Equal(3, result.Headers["x-retries"]);
+    }
+
+    // si un valor de header es null entonces ese header no se copia.
+    [Fact]
+    public void When_a_header_value_is_null_should_not_copy_that_header()
+    {
+        // Arrange
+        var rabbitProperties = new BasicProperties
+        {
+            Headers = new Dictionary<string, object?>
+            {
+                ["x-tenant"] = "acme",
+                ["x-empty"] = null
+            }
+        };
+
+        // Act
+        var result = RabbitMessageMapper.ToMessageProperties(rabbitProperties);
+
+        // Assert
+        Assert.Equal(["x-tenant"], result.Headers.Keys);
     }
 }
