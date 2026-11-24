@@ -222,4 +222,24 @@ public class RabbitMessageMapperTests
         // Assert
         Assert.Equal(DeliveryModes.Transient, result.DeliveryMode);
     }
+
+    [Fact]
+    public void When_message_properties_have_headers_should_copy_them_to_rabbit_properties()
+    {
+        // Arrange
+        var messageProperties = new MessageProperties(new Dictionary<string, object>
+        {
+            ["x-tenant"] = "acme",
+            ["x-retries"] = 3
+        });
+
+        // Act
+        var result = RabbitMessageMapper.ToBasicProperties(messageProperties);
+
+        // Assert
+        Assert.NotNull(result.Headers);
+        Assert.Equal(2, result.Headers.Count);
+        Assert.Equal("acme", result.Headers["x-tenant"]);
+        Assert.Equal(3, result.Headers["x-retries"]);
+    }
 }

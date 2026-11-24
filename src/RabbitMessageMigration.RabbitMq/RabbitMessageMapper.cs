@@ -33,13 +33,24 @@ internal static class RabbitMessageMapper
         return headers;
     }
 
+    private static Dictionary<string, object?> ToRabbitHeaders(IDictionary<string, object> headers)
+    {
+        var rabbitHeaders = new Dictionary<string, object?>();
+        foreach (var (key, value) in headers)
+        {
+            rabbitHeaders[key] = value;
+        }
+        return rabbitHeaders;
+    }
+
     public static BasicProperties ToBasicProperties(MessageProperties properties)
     {
         return new BasicProperties
         {
             ContentType = properties.ContentType,
             MessageId = properties.MessageId,
-            DeliveryMode = properties.Persistent ? DeliveryModes.Persistent : DeliveryModes.Transient
+            DeliveryMode = properties.Persistent ? DeliveryModes.Persistent : DeliveryModes.Transient,
+            Headers = ToRabbitHeaders(properties.Headers)
         };
     }
 }
