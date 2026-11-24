@@ -174,4 +174,20 @@ public class RabbitMessageMapperTests
         // Assert
         Assert.Equal("application/json", result.ContentType);
     }
+
+    [Fact]
+    public void When_message_properties_have_message_id_should_map_it_to_rabbit_properties()
+    {
+        // Arrange
+        var messageProperties = new MessageProperties
+        {
+            MessageId = "12345"
+        };
+
+        // Act
+        var result = RabbitMessageMapper.ToBasicProperties(messageProperties);
+
+        // Assert
+        Assert.Equal("12345", result.MessageId);
+    }
 }
