@@ -1,4 +1,5 @@
 using RabbitMQ.Client;
+using RabbitMessageMigration.Core.Messaging;
 
 namespace RabbitMessageMigration.RabbitMq.Tests;
 
@@ -156,5 +157,21 @@ public class RabbitMessageMapperTests
 
         // Assert
         Assert.Equal(["x-tenant"], result.Headers.Keys);
+    }
+
+    [Fact]
+    public void When_message_properties_have_content_type_should_map_it_to_rabbit_properties()
+    {
+        // Arrange
+        var messageProperties = new MessageProperties
+        {
+            ContentType = "application/json"
+        };
+
+        // Act
+        var result = RabbitMessageMapper.ToBasicProperties(messageProperties);
+
+        // Assert
+        Assert.Equal("application/json", result.ContentType);
     }
 }

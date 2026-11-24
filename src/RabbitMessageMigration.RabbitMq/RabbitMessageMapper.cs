@@ -32,4 +32,12 @@ internal static class RabbitMessageMapper
         }
         return headers;
     }
+
+    public static BasicProperties ToBasicProperties(MessageProperties properties)
+    {
+        return new BasicProperties
+        {
+            ContentType = properties.ContentType
+        };
+    }
 }
