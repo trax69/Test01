@@ -7,5 +7,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/RabbitMessageMigration.Core.Tests/RabbitMessageMigration.Core.Tests.csproj" />
     <Project Path="tests/RabbitMessageMigration.RabbitMq.Tests/RabbitMessageMigration.RabbitMq.Tests.csproj" />
+    <Project Path="tests/RabbitMessageMigration.RabbitMq.IntegrationTests/RabbitMessageMigration.RabbitMq.IntegrationTests.csproj" />
   </Folder>
 </Solution>

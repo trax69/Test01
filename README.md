@@ -95,12 +95,13 @@
 
 ### Conexiones y canales
 
-- **Decisión:** una conexión por broker (origen y destino) y, por cada cola, un canal de origen y uno de destino. El adaptador conserva los canales de la cola en curso y los sustituye por otros nuevos cuando se le pide otra cola o cuando un canal se ha cerrado por un error. Cada mensaje se confirma o se devuelve siempre por el canal que lo entregó.
+- **Decisión:** una conexión por broker (origen y destino) y, por cada cola, un canal de origen y uno de destino. El adaptador conserva los canales de la cola en curso y los sustituye por otros nuevos cuando se le pide otra cola o cuando un canal se ha cerrado por un error. Cada mensaje se confirma o se devuelve siempre por el canal que lo entregó. La conexión se crea sin reconexión automática: si se pierde, las operaciones fallan y se aplica la política ante un fallo.
 - **Motivo:**
   - Comprobado en RabbitMQ 4.4.1: consultar o leer una cola que no existe (`QueueDeclarePassive`, `BasicGet`) hace que RabbitMQ cierre el canal con `404 NOT_FOUND`, y cualquier operación posterior en ese canal lanza `AlreadyClosedException`. Con un canal compartido, una cola inexistente haría fallar a todas las siguientes, y la política ante un fallo dice que las demás colas continúan.
   - También cierran el canal (comprobado) confirmar un delivery tag desconocido y publicar con un `user_id` distinto del usuario conectado; en los dos casos con `406 PRECONDITION_FAILED`.
   - Un canal nuevo sobre la misma conexión funciona con normalidad, así que el error de una cola no obliga a reconectar.
   - Al cerrarse un canal, RabbitMQ devuelve a su cola los mensajes sin confirmar (comprobado: vuelven con `Redelivered` a `true`). Es lo que ya asume la política ante un fallo.
+  - El cliente de .NET reconecta por defecto, pero los delivery tags empiezan de nuevo en cada canal. Tras una reconexión silenciosa, confirmar con un tag antiguo podría afectar a otro mensaje y perderlo.
 - **Alternativa descartada:** un único canal para toda la migración.
 - **Alternativa descartada:** un canal por operación. El delivery tag solo vale en el canal que entregó el mensaje.
 

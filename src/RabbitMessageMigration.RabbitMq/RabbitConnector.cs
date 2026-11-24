@@ -5,6 +5,11 @@ namespace RabbitMessageMigration.RabbitMq;
 
 public static class RabbitConnector
 {
+    public static async Task<IConnection> ConnectAsync(RabbitSettings settings, CancellationToken cancellationToken = default)
+    {
+        return await CreateFactory(settings).CreateConnectionAsync(cancellationToken);
+    }
+    
     internal static ConnectionFactory CreateFactory(RabbitSettings settings)
     {
         return new ConnectionFactory
