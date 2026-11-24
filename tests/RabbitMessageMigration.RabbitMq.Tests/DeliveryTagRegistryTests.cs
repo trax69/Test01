@@ -39,4 +39,28 @@ public class DeliveryTagRegistryTests
         Assert.Equal(1UL, firstTag);
         Assert.Equal(2UL, secondTag);
     }
+
+    // Cuando un mensaje ya se ha tomado, entonces no se puede tomar otra vez (confirmarlo dos veces cerraría el canal).
+    [Fact]
+    public void When_message_was_already_taken_should_throw_invalid_operation()
+    {
+        // Arrange
+        var sut = new DeliveryTagRegistry();
+        var message = new ReceivedMessage();
+        sut.Register(message, 5);
+        sut.Take(message);
+
+        // Act y Assert
+        Assert.Throws<InvalidOperationException>(() => sut.Take(message));
+    }
+    // Cuando el mensaje no se registró nunca, entonces tomarlo lanza InvalidOperationException.
+    [Fact]
+    public void When_message_was_never_registered_should_throw_invalid_operation()
+    {
+        // Arrange
+        var sut = new DeliveryTagRegistry();
+
+        // Act y Assert
+        Assert.Throws<InvalidOperationException>(() => sut.Take(new ReceivedMessage()));
+    }
 }

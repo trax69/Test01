@@ -14,6 +14,12 @@ internal sealed class DeliveryTagRegistry
 
     public ulong Take(ReceivedMessage message)
     {
-        return _deliveryTags[message];
+        if (!_deliveryTags.Remove(message, out var deliveryTag))
+        {
+            throw new InvalidOperationException(
+                "El mensaje no está registrado: no lo entregó este origen o ya se confirmó o se devolvió.");
+        }
+
+        return deliveryTag;
     }
 }
