@@ -143,4 +143,24 @@ public class RabbitQueueSourceTests : IClassFixture<RabbitMqFixture>
         // Assert
         Assert.Equal(1u, await _rabbit.WaitForReadyCountAsync(queue, 1));
     }
+
+    // Cuando se confirma dos veces el mismo mensaje, entonces la segunda lanza InvalidOperationException.
+    [Fact]
+    public async Task When_message_is_confirmed_twice_should_throw_invalid_operation()
+    {
+        // Arrange
+        var queue = await _rabbit.CreateQueueAsync();
+        await _rabbit.PublishAsync(queue, "hola");
+        await _rabbit.WaitForReadyCountAsync(queue, 1);
+
+        await using var connection = await RabbitConnector.ConnectAsync(_rabbit.Settings);
+        var source = new RabbitQueueSource(connection);
+        var message = await source.ReceiveMessageAsync(queue, CancellationToken.None);
+        Assert.NotNull(message);
+        await source.ConfirmMessageAsync(queue, message, CancellationToken.None);
+
+        // Act y Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => source.ConfirmMessageAsync(queue, message, CancellationToken.None));
+    }
 }
