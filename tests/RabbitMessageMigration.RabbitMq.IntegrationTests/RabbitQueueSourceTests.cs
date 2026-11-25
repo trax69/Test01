@@ -50,4 +50,24 @@ public class RabbitQueueSourceTests : IClassFixture<RabbitMqFixture>
         // Assert
         Assert.Null(message);
     }
+
+    // Cuando la cola tiene un mensaje, entonces ReceiveMessageAsync devuelve su cuerpo.
+    [Fact]
+    public async Task When_queue_has_a_message_should_return_its_body()
+    {
+        // Arrange
+        var queue = await _rabbit.CreateQueueAsync();
+        await _rabbit.PublishAsync(queue, "hola");
+        await _rabbit.WaitForReadyCountAsync(queue, 1);
+
+        await using var connection = await RabbitConnector.ConnectAsync(_rabbit.Settings);
+        var source = new RabbitQueueSource(connection);
+
+        // Act
+        var message = await source.ReceiveMessageAsync(queue, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(message);
+        Assert.Equal("hola", Encoding.UTF8.GetString(message.Body));
+    }
 }

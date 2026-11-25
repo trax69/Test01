@@ -28,7 +28,7 @@ public sealed class RabbitQueueSource : IMessageSource
             return null;
         }
 
-        throw new NotImplementedException();
+        return new ReceivedMessage(result.Body.ToArray());
     }
 
     public Task ConfirmMessageAsync(string queueName, ReceivedMessage message, CancellationToken cancellationToken)
