@@ -19,8 +19,17 @@ public sealed class RabbitQueueSource : IMessageSource
         return (int)queue.MessageCount;
     }
 
-    public Task<ReceivedMessage?> ReceiveMessageAsync(string queueName, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+    public async Task<ReceivedMessage?> ReceiveMessageAsync(string queueName, CancellationToken cancellationToken)
+    {
+        await using var channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
+        var result = await channel.BasicGetAsync(queueName, autoAck: false, cancellationToken);
+        if (result is null)
+        {
+            return null;
+        }
+
+        throw new NotImplementedException();
+    }
 
     public Task ConfirmMessageAsync(string queueName, ReceivedMessage message, CancellationToken cancellationToken)
         => throw new NotImplementedException();

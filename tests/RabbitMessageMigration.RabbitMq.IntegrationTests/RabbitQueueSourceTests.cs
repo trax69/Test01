@@ -34,4 +34,20 @@ public class RabbitQueueSourceTests : IClassFixture<RabbitMqFixture>
         // Assert
         Assert.Equal(3, count);
     }
+
+    // Cuando la cola está vacía, entonces ReceiveMessageAsync devuelve null.
+    [Fact]
+    public async Task When_queue_is_empty_should_return_null()
+    {
+        // Arrange
+        var queue = await _rabbit.CreateQueueAsync();
+        await using var connection = await RabbitConnector.ConnectAsync(_rabbit.Settings);
+        var source = new RabbitQueueSource(connection);
+
+        // Act
+        var message = await source.ReceiveMessageAsync(queue, CancellationToken.None);
+
+        // Assert
+        Assert.Null(message);
+    }
 }
