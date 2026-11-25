@@ -163,4 +163,75 @@ public class RabbitQueueSourceTests : IClassFixture<RabbitMqFixture>
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => source.ConfirmMessageAsync(queue, message, CancellationToken.None));
     }
+
+    // Cuando la cola no existe, entonces GetMessageCountAsync lanza OperationInterruptedException.
+    [Fact]
+    public async Task When_queue_does_not_exist_count_should_throw()
+    {
+        // Arrange
+        await using var connection = await RabbitConnector.ConnectAsync(_rabbit.Settings);
+        var source = new RabbitQueueSource(connection);
+
+        // Act & Assert
+        await Assert.ThrowsAnyAsync<OperationInterruptedException>(
+            () => source.GetMessageCountAsync("no-existe-" + Guid.NewGuid().ToString("N"), CancellationToken.None));
+    }
+
+    // Cuando la cola no existe, entonces ReceiveMessageAsync lanza OperationInterruptedException.
+    [Fact]
+    public async Task When_queue_does_not_exist_receive_should_throw()
+    {
+        // Arrange
+        await using var connection = await RabbitConnector.ConnectAsync(_rabbit.Settings);
+        var source = new RabbitQueueSource(connection);
+
+        // Act & Assert
+        await Assert.ThrowsAnyAsync<OperationInterruptedException>(
+            () => source.ReceiveMessageAsync("no-existe-" + Guid.NewGuid().ToString("N"), CancellationToken.None));
+    }
+
+    // Cuando una cola inexistente falla, entonces la siguiente cola se lee con normalidad.
+    [Fact]
+    public async Task When_a_queue_fails_should_still_read_the_next_queue()
+    {
+        // Arrange
+        var queue = await _rabbit.CreateQueueAsync();
+        await _rabbit.PublishAsync(queue, "hola");
+        await _rabbit.WaitForReadyCountAsync(queue, 1);
+
+        await using var connection = await RabbitConnector.ConnectAsync(_rabbit.Settings);
+        var source = new RabbitQueueSource(connection);
+        await Assert.ThrowsAnyAsync<OperationInterruptedException>(
+            () => source.ReceiveMessageAsync("no-existe-" + Guid.NewGuid().ToString("N"), CancellationToken.None));
+
+        // Act
+        var message = await source.ReceiveMessageAsync(queue, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(message);
+        Assert.Equal("hola", Encoding.UTF8.GetString(message.Body));
+    }
+
+    // Cuando la cola se crea después de fallar, entonces se lee con un canal nuevo.
+    [Fact]
+    public async Task When_queue_is_created_after_a_failure_should_read_it_with_a_new_channel()
+    {
+        // Arrange
+        var queue = "creada-despues-" + Guid.NewGuid().ToString("N");
+        await using var connection = await RabbitConnector.ConnectAsync(_rabbit.Settings);
+        var source = new RabbitQueueSource(connection);
+        await Assert.ThrowsAnyAsync<OperationInterruptedException>(
+            () => source.ReceiveMessageAsync(queue, CancellationToken.None));
+
+        await _rabbit.CreateQueueAsync(queue);
+        await _rabbit.PublishAsync(queue, "hola");
+        await _rabbit.WaitForReadyCountAsync(queue, 1);
+
+        // Act
+        var message = await source.ReceiveMessageAsync(queue, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(message);
+        Assert.Equal("hola", Encoding.UTF8.GetString(message.Body));
+    }
 }
