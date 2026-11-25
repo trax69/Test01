@@ -59,6 +59,9 @@ public sealed class RabbitQueueSource : IMessageSource
         await _channel!.BasicAckAsync(deliveryTag, multiple: false, cancellationToken);
     }
 
-    public Task RequeueMessageAsync(string queueName, ReceivedMessage message, CancellationToken cancellationToken)
-        => throw new NotImplementedException();
+    public async Task RequeueMessageAsync(string queueName, ReceivedMessage message, CancellationToken cancellationToken)
+    {
+        var deliveryTag = _deliveryTags.Take(message);
+        await _channel!.BasicNackAsync(deliveryTag, multiple: false, requeue: true, cancellationToken);
+    }
 }
