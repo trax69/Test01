@@ -70,4 +70,34 @@ public class RabbitQueueSourceTests : IClassFixture<RabbitMqFixture>
         Assert.NotNull(message);
         Assert.Equal("hola", Encoding.UTF8.GetString(message.Body));
     }
+
+    // Cuando el mensaje tiene propiedades, entonces ReceiveMessageAsync las devuelve mapeadas.
+    [Fact]
+    public async Task When_message_has_properties_should_return_them_mapped()
+    {
+        // Arrange
+        var queue = await _rabbit.CreateQueueAsync();
+        var properties = new BasicProperties
+        {
+            ContentType = "application/json",
+            MessageId = "id-1",
+            DeliveryMode = DeliveryModes.Persistent,
+            Headers = new Dictionary<string, object?> { ["intentos"] = 3 }
+        };
+        await _rabbit.PublishAsync(queue, "hola", properties);
+        await _rabbit.WaitForReadyCountAsync(queue, 1);
+
+        await using var connection = await RabbitConnector.ConnectAsync(_rabbit.Settings);
+        var source = new RabbitQueueSource(connection);
+
+        // Act
+        var message = await source.ReceiveMessageAsync(queue, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(message);
+        Assert.Equal("application/json", message.Properties.ContentType);
+        Assert.Equal("id-1", message.Properties.MessageId);
+        Assert.True(message.Properties.Persistent);
+        Assert.Equal(3, message.Properties.Headers["intentos"]);
+    }
 }

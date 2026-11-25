@@ -28,7 +28,8 @@ public sealed class RabbitQueueSource : IMessageSource
             return null;
         }
 
-        return new ReceivedMessage(result.Body.ToArray());
+        var properties = RabbitMessageMapper.ToMessageProperties(result.BasicProperties);
+        return new ReceivedMessage(result.Body.ToArray(), properties);
     }
 
     public Task ConfirmMessageAsync(string queueName, ReceivedMessage message, CancellationToken cancellationToken)
