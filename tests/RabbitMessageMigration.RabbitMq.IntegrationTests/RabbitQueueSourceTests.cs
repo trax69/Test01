@@ -100,4 +100,26 @@ public class RabbitQueueSourceTests : IClassFixture<RabbitMqFixture>
         Assert.True(message.Properties.Persistent);
         Assert.Equal(3, message.Properties.Headers["intentos"]);
     }
+
+    // Cuando se confirma un mensaje recibido, entonces no vuelve a la cola al cerrar la conexión.
+    [Fact]
+    public async Task When_message_is_confirmed_should_not_return_to_the_queue()
+    {
+        // Arrange
+        var queue = await _rabbit.CreateQueueAsync();
+        await _rabbit.PublishAsync(queue, "hola");
+        await _rabbit.WaitForReadyCountAsync(queue, 1);
+
+        await using var connection = await RabbitConnector.ConnectAsync(_rabbit.Settings);
+        var source = new RabbitQueueSource(connection);
+        var message = await source.ReceiveMessageAsync(queue, CancellationToken.None);
+        Assert.NotNull(message);
+
+        // Act
+        await source.ConfirmMessageAsync(queue, message, CancellationToken.None);
+        await connection.CloseAsync(); // sin confirmar, RabbitMQ lo devolvería a la cola
+
+        // Assert
+        Assert.Equal(0u, await _rabbit.WaitForReadyCountAsync(queue, 0));
+    }
 }
