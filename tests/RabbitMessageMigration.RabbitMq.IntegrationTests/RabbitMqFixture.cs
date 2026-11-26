@@ -2,6 +2,7 @@ using System.Text;
 using RabbitMessageMigration.Core.Configuration;
 using RabbitMQ.Client;
 using Testcontainers.RabbitMq;
+using RabbitMessageMigration.Core.Messaging;
 
 namespace RabbitMessageMigration.RabbitMq.IntegrationTests;
 
@@ -48,6 +49,39 @@ public sealed class RabbitMqFixture : IAsyncLifetime
         await using var channel = await _connection.CreateChannelAsync(
             new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true));
         await channel.BasicPublishAsync("", queueName, mandatory: true, properties ?? new BasicProperties(), Encoding.UTF8.GetBytes(body));
+    }
+
+    public async Task<string?> ReadBodyAsync(string queueName)
+    {
+        await using var channel = await _connection.CreateChannelAsync();
+        var result = await channel.BasicGetAsync(queueName, autoAck: true);
+        return result is null ? null : Encoding.UTF8.GetString(result.Body.Span);
+    }
+
+    public async Task<MessageProperties?> ReadPropertiesAsync(string queueName)
+    {
+        await using var channel = await _connection.CreateChannelAsync();
+        var result = await channel.BasicGetAsync(queueName, autoAck: true);
+        if (result is null)
+        {
+            return null;
+        }
+
+        var headers = new Dictionary<string, object>();
+        foreach (var (key, value) in result.BasicProperties.Headers ?? new Dictionary<string, object?>())
+        {
+            if (value is not null)
+            {
+                headers[key] = value;
+            }
+        }
+
+        return new MessageProperties(headers)
+        {
+            ContentType = result.BasicProperties.ContentType,
+            MessageId = result.BasicProperties.MessageId,
+            Persistent = result.BasicProperties.DeliveryMode == DeliveryModes.Persistent
+        };
     }
 
     public async Task<uint> WaitForReadyCountAsync(string queueName, uint expected)

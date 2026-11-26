@@ -3,7 +3,7 @@ using RabbitMQ.Client;
 
 namespace RabbitMessageMigration.RabbitMq;
 
-public sealed class RabbitQueueSource : IMessageSource
+public sealed class RabbitQueueSource : IMessageSource, IAsyncDisposable
 {
     private readonly IConnection _connection;
     private readonly DeliveryTagRegistry _deliveryTags = new();
@@ -63,5 +63,15 @@ public sealed class RabbitQueueSource : IMessageSource
     {
         var deliveryTag = _deliveryTags.Take(message);
         await _channel!.BasicNackAsync(deliveryTag, multiple: false, requeue: true, cancellationToken);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_channel is not null)
+        {
+            await _channel.DisposeAsync();
+            _channel = null;
+            _channelQueue = null;
+        }
     }
 }

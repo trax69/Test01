@@ -234,4 +234,25 @@ public class RabbitQueueSourceTests : IClassFixture<RabbitMqFixture>
         Assert.NotNull(message);
         Assert.Equal("hola", Encoding.UTF8.GetString(message.Body));
     }
+
+    // Cuando se libera el origen con un mensaje sin confirmar, entonces el mensaje vuelve a la cola.
+    [Fact]
+    public async Task When_source_is_disposed_with_an_unconfirmed_message_should_return_it_to_the_queue()
+    {
+        // Arrange
+        var queue = await _rabbit.CreateQueueAsync();
+        await _rabbit.PublishAsync(queue, "hola");
+        await _rabbit.WaitForReadyCountAsync(queue, 1);
+
+        await using var connection = await RabbitConnector.ConnectAsync(_rabbit.Settings);
+        var source = new RabbitQueueSource(connection);
+        var message = await source.ReceiveMessageAsync(queue, CancellationToken.None);
+        Assert.NotNull(message);
+
+        // Act
+        await source.DisposeAsync();
+
+        // Assert
+        Assert.Equal(1u, await _rabbit.WaitForReadyCountAsync(queue, 1));
+    }
 }
