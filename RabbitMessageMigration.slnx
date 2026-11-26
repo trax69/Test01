@@ -8,5 +8,6 @@
     <Project Path="tests/RabbitMessageMigration.Core.Tests/RabbitMessageMigration.Core.Tests.csproj" />
     <Project Path="tests/RabbitMessageMigration.RabbitMq.Tests/RabbitMessageMigration.RabbitMq.Tests.csproj" />
     <Project Path="tests/RabbitMessageMigration.RabbitMq.IntegrationTests/RabbitMessageMigration.RabbitMq.IntegrationTests.csproj" />
+    <Project Path="tests/RabbitMessageMigration.Console.Tests/RabbitMessageMigration.Console.Tests.csproj" />
   </Folder>
 </Solution>
