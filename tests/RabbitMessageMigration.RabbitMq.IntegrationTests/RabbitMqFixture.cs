@@ -22,10 +22,11 @@ public sealed class RabbitMqFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        var AmqpPort = 5672;
         await _container.StartAsync();
 
         // 127.0.0.1 y no "localhost": con Docker Desktop, localhost se resuelve primero a IPv6 y cada conexión tarda ~21 s.
-        Settings = new RabbitSettings("127.0.0.1", _container.GetMappedPublicPort(5672), Username, Password, "/");
+        Settings = new RabbitSettings("127.0.0.1", _container.GetMappedPublicPort(AmqpPort), Username, Password, "/");
         _connection = await RabbitConnector.ConnectAsync(Settings);
     }
 
@@ -88,7 +89,9 @@ public sealed class RabbitMqFixture : IAsyncLifetime
     {
         await using var channel = await _connection.CreateChannelAsync();
         var count = 0u;
-        for (var attempt = 0; attempt < 100; attempt++)
+        var MaxAttempts = 100;
+        var MillisecondsDelay = 50;
+        for (var attempt = 0; attempt < MaxAttempts; attempt++)
         {
             count = (await channel.QueueDeclarePassiveAsync(queueName)).MessageCount;
             if (count == expected)
@@ -96,7 +99,7 @@ public sealed class RabbitMqFixture : IAsyncLifetime
                 break;
             }
 
-            await Task.Delay(50);
+            await Task.Delay(MillisecondsDelay);
         }
 
         return count;
